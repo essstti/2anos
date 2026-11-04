@@ -135,15 +135,28 @@
   #mlista .t span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   #mlista .t span + span { font-size: .4rem; color: #bbb; }
 
+  /* ---------- FLECHA DE VOLVER ---------- */
+  .volver {
+    position: fixed; top: 58px; left: 10px; z-index: 30; width: 44px; height: 36px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    background: #7a7a7a; border: 3px solid #000; box-shadow: inset -4px -4px 0 #555, inset 4px 4px 0 #c6c6c6;
+    opacity: 0; pointer-events: none; transition: opacity .5s;
+  }
+  .volver.ver { opacity: 1; pointer-events: auto; }
+  .volver:active { transform: translateY(2px); }
+  .volver svg { image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #3f3f3f); }
+
   /* ---------- MODO HISTORIA ---------- */
   #pantalla3 { display: flex; flex-direction: column; padding-top: 52px; }
-  #tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 14px 12px 6px; }
+  #tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 44px 12px 6px; }
   .tab {
     font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; text-transform: uppercase;
     font-size: clamp(.5rem, 2.3vw, .7rem); padding: 1em 1.1em; cursor: pointer; color: #fff;
     background: #7a7a7a; border: 3px solid #000; text-shadow: 2px 2px 0 #3f3f3f;
     box-shadow: inset -4px -4px 0 #555, inset 4px 4px 0 #c6c6c6;
   }
+  .tab { display: inline-flex; align-items: center; gap: .6em; }
+  .tab .e { font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; font-size: 1.5em; line-height: 1; text-shadow: none; }
   .tab:active { transform: translateY(2px); }
   .tab.activa { background: #5d9c3f; box-shadow: inset -4px -4px 0 #3b6e22, inset 4px 4px 0 #8fd35e; }
   #galeria {
@@ -181,6 +194,10 @@
   .dorso h3 { font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; font-size: .6rem; color: #8a0f2c; text-transform: uppercase; line-height: 1.5; margin-bottom: .9em; }
   .dorso p { color: #3a2a10; font-size: 1rem; line-height: 1.4; overflow-y: auto; white-space: pre-wrap; }
 
+  /* polaroid horizontal */
+  .pol.h { aspect-ratio: 6 / 5; }
+  .item.h { grid-column: span 2; }
+
   /* zoom */
   .visor {
     position: fixed; inset: 0; z-index: 40; background: rgba(10, 5, 30, .85);
@@ -189,6 +206,7 @@
   }
   .visor.on { opacity: 1; }
   .visor .pol { width: min(86vw, calc((100vh - 150px) * 5 / 6), 420px); cursor: pointer; }
+  .visor .pol.h { width: min(92vw, calc((100vh - 150px) * 6 / 5), 560px); }
   .visor .foto img { object-fit: contain; }
   .visor .foto { font-size: .7rem; }
   .visor .pie { font-size: .7rem; }
@@ -210,6 +228,10 @@
   <canvas id="heart" width="13" height="11"></canvas>
   <div id="hint">Click to start.</div>
 </div>
+
+<button id="volver" class="volver" aria-label="Volver">
+  <svg width="22" height="17" viewBox="0 0 9 7" shape-rendering="crispEdges" fill="#fff"><path d="M3 0h1v1H3zM2 1h2v1H2zM1 2h8v1H1zM0 3h9v1H0zM1 4h8v1H1zM2 5h2v1H2zM3 6h1v1H3z"/></svg>
+</button>
 
 <div id="musica">
   <div id="mbar">
@@ -306,6 +328,10 @@
   });
   main.appendChild(titulo);
 
+  let navegando = false, pantalla = 'intro';   // pantalla: 'intro' | 'main' | 'p3'
+  const tFlow = [];
+  const volverBtn = document.getElementById('volver');
+
   const botones = document.createElement('div');
   botones.id = 'botones';
   [['VER MODO HISTORIA', 'rojo', 'historia'], ['CONTINUAR SIN VER', 'celeste', 'continuar']].forEach(([t, cls, modo]) => {
@@ -313,12 +339,15 @@
     b.className = 'btn ' + cls;
     b.textContent = t;
     b.addEventListener('click', () => {
+      if (navegando) return;
+      navegando = true; pantalla = 'p3';
       const p3 = document.getElementById('pantalla3');
       p3.dataset.modo = modo;
       main.classList.remove('show');
       setTimeout(() => {
         p3.classList.add('show');
         if (modo === 'historia') armarHistoria();
+        navegando = false;
       }, 800);
     });
     botones.appendChild(b);
@@ -353,9 +382,32 @@
     }));
     heart.style.visibility = 'hidden';
     intro.classList.add('open');
-    setTimeout(() => { main.classList.add('show'); titulo.classList.add('go'); }, 1100);
-    setTimeout(() => botones.classList.add('ver'), 1100 + 5400);
-    setTimeout(() => intro.remove(), 1500);
+    tFlow.push(setTimeout(() => { main.classList.add('show'); titulo.classList.add('go'); pantalla = 'main'; volverBtn.classList.add('ver'); }, 1100));
+    tFlow.push(setTimeout(() => botones.classList.add('ver'), 1100 + 5400));
+  });
+
+  // ---- Flecha de volver: historia -> título -> corazón ----
+  volverBtn.addEventListener('click', () => {
+    if (navegando) return;
+    const p3 = document.getElementById('pantalla3');
+    if (pantalla === 'p3') {
+      navegando = true; pantalla = 'main';
+      p3.classList.remove('show');
+      setTimeout(() => { main.classList.add('show'); navegando = false; }, 800);
+    } else if (pantalla === 'main') {
+      navegando = true; pantalla = 'intro';
+      tFlow.forEach(clearTimeout); tFlow.length = 0;
+      volverBtn.classList.remove('ver');
+      main.classList.remove('show');
+      setTimeout(() => {
+        titulo.classList.remove('go', 'pulse');
+        botones.classList.remove('ver');
+        heart.style.visibility = 'visible';
+        intro.classList.remove('open');
+        opened = false;
+        navegando = false;
+      }, 800);
+    }
   });
 
   // =====================================================
@@ -379,8 +431,10 @@
   const $ = id => document.getElementById(id);
 
   // se llama dentro del toque en el corazón (el navegador exige un toque del usuario para sonar)
+  let musicaIniciada = false;
   function iniciarMusica() {
-    if (actual >= 0 && audio.paused) audio.play().catch(() => {});
+    if (musicaIniciada || actual < 0) return;
+    audio.play().then(() => { musicaIniciada = true; }).catch(() => {});
   }
   function renderMusica() {
     const suena = actual >= 0 && !audio.paused;
@@ -446,9 +500,10 @@
   // =====================================================
   //  MODO HISTORIA: polaroids por solapa
   //  >>> CARGÁ TUS FOTOS ACÁ <<<
-  //  cat: 'destacados' | 'memes' | 'mates'
+  //  cat: 'destacados' | 'memes' | 'mates' | 'nosotros'
   //  src: ruta a la foto (ej. 'fotos/01.jpg', en una carpeta junto a este archivo) o dejalo '' para ver el marcador
   //  titulo: texto debajo de la foto | desc: lo que se lee al darla vuelta
+  //  orient (opcional): 'h' horizontal o 'v' vertical. Si no lo ponés, se detecta solo según la foto.
   // =====================================================
   const FOTOS = [
     { cat: 'destacados', src: '', titulo: 'Nuestro primer día', desc: 'Acá va la descripción de esta foto.' },
@@ -459,14 +514,33 @@
     { cat: 'memes',      src: '', titulo: 'Meme 3', desc: 'Acá va la descripción de este meme.' },
     { cat: 'mates',      src: '', titulo: 'Mates 1', desc: 'Acá va la descripción de esta foto.' },
     { cat: 'mates',      src: '', titulo: 'Mates 2', desc: 'Acá va la descripción de esta foto.' },
-    { cat: 'mates',      src: '', titulo: 'Mates 3', desc: 'Acá va la descripción de esta foto.' }
+    { cat: 'mates',      src: '', titulo: 'Mates 3', desc: 'Acá va la descripción de esta foto.' },
+    { cat: 'nosotros',   src: '', titulo: 'Nosotros 1', desc: 'Acá va la descripción de esta foto.' },
+    { cat: 'nosotros',   src: '', titulo: 'Nosotros 2', desc: 'Acá va la descripción de esta foto.' },
+    { cat: 'nosotros',   src: '', titulo: 'Nosotros 3', desc: 'Acá va la descripción de esta foto.' }
   ];
-  const CATS = [['destacados', 'Momentos destacados', '⭐'], ['memes', 'Memes', '😂'], ['mates', 'Mates', '📐']];
+  const CATS = [['destacados', 'Momentos destacados', '⭐'], ['memes', 'Memes', '😂'], ['mates', 'Mates', '🧉'], ['nosotros', 'Nosotros', '🌙']];
   let filtro = null;
+
+  // Detecta solo si la foto es horizontal (ancho > alto). Para forzarlo: orient: 'h' o 'v' en FOTOS.
+  function detectarOrientaciones() {
+    FOTOS.forEach(it => {
+      if (!it.src || it.orient) return;
+      const im = new Image();
+      im.onload = () => {
+        if (im.naturalWidth > im.naturalHeight) {
+          it.orient = 'h';
+          if ($('galeria') && !visorActual) pintarGaleria();
+        }
+      };
+      im.src = it.src;
+    });
+  }
+  detectarOrientaciones();
 
   function crearPol(it, conDorso) {
     const pol = document.createElement('div');
-    pol.className = 'pol';
+    pol.className = 'pol' + (it.orient === 'h' ? ' h' : '');
     const inner = document.createElement('div');
     inner.className = 'pol-inner';
     const frente = document.createElement('div');
@@ -509,11 +583,13 @@
     p3.innerHTML = '';
     const tabs = document.createElement('div');
     tabs.id = 'tabs';
-    CATS.forEach(([cat, nombre]) => {
+    CATS.forEach(([cat, nombre, emoji]) => {
       const b = document.createElement('button');
       b.className = 'tab';
       b.dataset.cat = cat;
-      b.textContent = nombre;
+      const t = document.createElement('span'); t.textContent = nombre;
+      const e = document.createElement('span'); e.className = 'e'; e.textContent = emoji;
+      b.append(t, e);
       b.addEventListener('click', () => { filtro = filtro === cat ? null : cat; pintarGaleria(); });
       tabs.appendChild(b);
     });
@@ -538,7 +614,7 @@
     }
     lista.forEach((it, k) => {
       const item = document.createElement('div');
-      item.className = 'item';
+      item.className = 'item' + (it.orient === 'h' ? ' h' : '');
       item.style.setProperty('--r', (((k * 5) % 7) - 3) * 0.8 + 'deg');
       item.style.setProperty('--k', Math.min(k, 20));
       item.appendChild(crearPol(it, false));
@@ -600,4 +676,5 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && visorActual) visorActual.cerrar(); });
 </script>
 </body>
+</html>
 </html>
