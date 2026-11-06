@@ -807,7 +807,8 @@
   //  >>> AGREGÁ O CAMBIÁ PREGUNTAS ACÁ: [texto de la solapa, emoji] <<<
   // =====================================================
   const PREGUNTAS = [
-    { pregunta: '¿Bebida de hoy?', opciones: [['Aperol', '🍊'], ['Santa Julia', '🥂'], ['Gin', '🍸']] }
+    { pregunta: '¿Bebida de hoy?', opciones: [['Aperol', '🍊'], ['Santa Julia', '🥂'], ['Gin', '🍸']] },
+    { pregunta: '¿Plan de hoy?',   opciones: [['Vueltin', '🚗'], ['Peli', '🍿'], ['Serie', '📺']] }
   ];
   const respuestas = [];
 
@@ -841,7 +842,21 @@
         elegida = true;
         b.classList.add('activa');           // se pone verde como la solapa elegida en las fotos
         respuestas[n] = texto;
-        setTimeout(() => mostrarPregunta(n + 1), 900);
+        // después de medio segundo: la pregunta y las otras solapas se van a la izquierda,
+        // la elegida se va a la derecha, y aparece la próxima pregunta
+        setTimeout(() => {
+          const otras = [h, ...caja.querySelectorAll('.tab:not(.activa)')];
+          [...otras, b].forEach(el => {
+            el.style.animation = 'none';
+            el.style.opacity = '1';
+            el.style.transition = 'transform .7s ease-in, opacity .7s ease-in';
+          });
+          plan.offsetWidth;   // fuerza al navegador a tomar el punto de partida
+          otras.forEach(el => { el.style.transform = 'translateX(-100vw)'; el.style.opacity = '0'; });
+          b.style.transform = 'translateX(100vw)';
+          b.style.opacity = '0';
+          setTimeout(() => { plan.remove(); armarPregunta(n + 1); }, 750);
+        }, 500);
       });
       caja.appendChild(b);
     });
