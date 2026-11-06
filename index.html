@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-  :root { --fondo: #1e1148; }  /* cambiá este color para probar otros fondos */
+  :root { --fondo: #5c0f1f; }  /* cambiá este color para probar otros fondos (antes: #1e1148 violeta) */
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; }
   body { font-family: "Courier New", Courier, monospace; font-weight: bold; background: var(--fondo); }
@@ -57,11 +57,11 @@
   .fila { display: flex; align-items: flex-end; justify-content: center; gap: .7em; }
   .tok {
     display: block; opacity: 0; transform: translateY(110vh);
-    color: #ff3b5c;
-    text-shadow: 0 .07em 0 #fff, .05em .07em 0 #fff, -.05em .07em 0 #fff;
+    color: #fff;
+    text-shadow: 0 .07em 0 #ff1f3d, .05em .07em 0 #ff1f3d, -.05em .07em 0 #ff1f3d;
   }
   .tok.b {
-    font-size: 1.45em; color: #8fd3ff;
+    font-size: 1.45em; color: #ff1f3d;
     text-shadow: 0 .05em 0 #fff, .04em .05em 0 #fff, -.04em .05em 0 #fff;
   }
   .medalla {
@@ -84,9 +84,9 @@
   }
   .btn:active { transform: translateY(.2em); }
   .btn.rojo { background: #d6284a; color: #ffe9ee; border: .2em solid #ff9db0; box-shadow: 0 .3em 0 #8a0f2c; }
-  .btn.celeste { background: #cfe9ff; color: #2b4fb0; border: .2em solid #fff; box-shadow: 0 .3em 0 #6aa0e0; }
+  .btn.celeste { background: #ffe9ee; color: #ff1f3d; border: .2em solid #fff; box-shadow: 0 .3em 0 #ff9db0; }
   .btn.rojo:hover { background: #e6385a; }
-  .btn.celeste:hover { background: #e2f2ff; }
+  .btn.celeste:hover { background: #fff5f7; }
   #pantalla3 {
     position: fixed; inset: 0; z-index: 1; background: var(--fondo);
     opacity: 0; pointer-events: none; transition: opacity .8s ease;
@@ -106,10 +106,12 @@
   }
   #plan h2 {
     font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; text-transform: uppercase;
-    font-size: clamp(1.3rem, 6.5vw, 2.8rem); line-height: 1.3; text-align: center; color: #ff3b5c;
-    text-shadow: 0 .07em 0 #fff, .05em .07em 0 #fff, -.05em .07em 0 #fff;
+    font-size: clamp(1.3rem, 6.5vw, 2.8rem); line-height: 1.3; text-align: center; color: #fff;
+    text-shadow: 0 .07em 0 #ff1f3d, .05em .07em 0 #ff1f3d, -.05em .07em 0 #ff1f3d;
     animation: sube 1.1s cubic-bezier(.2,.8,.3,1) both;   /* entra la frase entera desde abajo */
   }
+  #plan h2.izq { animation: entraIzq 1.1s cubic-bezier(.2,.8,.3,1) both; }   /* las preguntas entran desde la izquierda */
+  @keyframes entraIzq { from { opacity: 1; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
   #plan h2.pulse { animation: flota 2.6s ease-in-out infinite alternate; }   /* después flota suave */
   @keyframes flota { from { transform: translateY(0); } to { transform: translateY(-12px); } }
   /* botones y solapas caen desde arriba con un rebotecito */
@@ -237,7 +239,7 @@
 
   /* zoom */
   .visor {
-    position: fixed; inset: 0; z-index: 40; background: rgba(10, 5, 30, .85);
+    position: fixed; inset: 0; z-index: 40; background: rgba(30, 3, 10, .88);
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
     padding-top: 52px; opacity: 0; transition: opacity .35s;
   }
@@ -796,7 +798,7 @@
   function tituloPixel(texto) {
     const h = document.createElement('h2');
     h.textContent = texto;
-    h.addEventListener('animationend', e => { if (e.animationName === 'sube') h.classList.add('pulse'); });
+    h.addEventListener('animationend', e => { if (e.animationName === 'sube' || e.animationName === 'entraIzq') h.classList.add('pulse'); });
     return h;
   }
 
@@ -831,6 +833,7 @@
     const plan = document.createElement('div');
     plan.id = 'plan';
     const h = tituloPixel(pregunta);
+    h.classList.add('izq');
     const caja = document.createElement('div');
     caja.className = 'opciones';
     let elegida = false;
