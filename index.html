@@ -14,6 +14,20 @@
   body { font-family: "Courier New", Courier, monospace; font-weight: bold; background: var(--fondo); }
   canvas, img { image-rendering: pixelated; image-rendering: crisp-edges; }
 
+  /* ---------- PANTALLA 0: contraseña (quieta, sin animaciones) ---------- */
+  #clave {
+    position: fixed; inset: 0; z-index: 100; background: var(--fondo);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+    font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; color: #fff; padding: 0 16px;
+  }
+  #clave label { font-size: clamp(.9rem, 4vw, 1.4rem); text-shadow: 3px 3px 0 #3f3f3f; text-transform: uppercase; }
+  #clave input {
+    font-family: inherit; font-size: clamp(.8rem, 3.6vw, 1.1rem); color: #fff; caret-color: #fff;
+    background: rgba(0, 0, 0, .25); border: 4px solid #fff; border-radius: 0; outline: none;
+    width: min(80vw, 360px); padding: .9em 1em; text-align: center; letter-spacing: .2em;
+  }
+  #clave.fuera { display: none; }
+
   /* ---------- PANTALLA 1: corazón pixelado ---------- */
   #intro {
     position: fixed; inset: 0; z-index: 3;
@@ -266,6 +280,12 @@
 <div id="main"></div>
 <div id="pantalla3"></div>
 
+<form id="clave" autocomplete="off">
+  <label for="claveInput">Contraseña</label>
+  <input id="claveInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+  <button type="submit" class="tab">Entrar</button>
+</form>
+
 <div id="intro">
   <canvas id="heart" width="13" height="11"></canvas>
   <div id="hint">Click to start.</div>
@@ -400,6 +420,24 @@
     if (e.target === titulo.querySelector('.fila:last-child .tok:last-child')) titulo.classList.add('pulse');
   });
 
+  // =====================================================
+  //  CONTRASEÑA  >>> CAMBIÁ LA CONTRASEÑA ACÁ <<<
+  //  (no importan mayúsculas/minúsculas ni espacios al principio o al final)
+  // =====================================================
+  const CONTRASENA = '730';
+  const formClave = document.getElementById('clave');
+  const inputClave = document.getElementById('claveInput');
+  inputClave.focus();
+  formClave.addEventListener('submit', e => {
+    e.preventDefault();
+    if (inputClave.value.trim().toLowerCase() === CONTRASENA.trim().toLowerCase()) {
+      formClave.classList.add('fuera');   // correcta: aparece el corazón
+      inputClave.blur();
+    } else {
+      inputClave.value = '';               // incorrecta: no se muestra nada, solo se borra
+    }
+  });
+
   // ---- Al tocar el corazón: se rompe en bloques ----
   const intro = document.getElementById('intro');
   let opened = false;
@@ -513,7 +551,7 @@
   function irA(i) {
     actual = i;
     audio.src = pistas[i].url;
-    audio.play().catch(() => {});
+    if (opened) audio.play().catch(() => {});   // antes de romper el corazón solo cambia de canción, no suena
     renderMusica();
   }
   function siguientePista() { if (pistas.length) irA((actual + 1) % pistas.length); }
@@ -536,7 +574,7 @@
   $('mbar').addEventListener('click', () => $('mpanel').classList.toggle('abierto'));
   $('mprev').addEventListener('click', anteriorPista);
   $('mnext').addEventListener('click', siguientePista);
-  $('mplay').addEventListener('click', () => { if (actual < 0) return; audio.paused ? audio.play().catch(() => {}) : audio.pause(); });
+  $('mplay').addEventListener('click', () => { if (actual < 0 || !opened) return; audio.paused ? audio.play().catch(() => {}) : audio.pause(); });
   audio.addEventListener('error', () => { $('mnombre').textContent = 'No se pudo cargar'; });
   renderMusica();
 
