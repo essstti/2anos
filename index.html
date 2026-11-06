@@ -115,13 +115,14 @@
   #plan h2.pulse { animation: beat 1.8s ease-in-out infinite; }
   #plan .opciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6em; }
   #plan .btn { font-size: clamp(.8rem, 3.6vw, 1.1rem); padding: 1.2em 1.8em; opacity: 0; animation: pop .5s ease-out forwards;
-    transition: transform .35s ease, left .35s ease, top .35s ease; }
+    transition: transform .45s ease-out, left .45s ease-out, top .45s ease-out; }
   #plan .btn:nth-child(1) { animation-delay: 2.4s; }
   #plan .btn:nth-child(2) { animation-delay: 2.65s; }
   #plan .btn.huye { position: fixed; z-index: 5; }           /* Plan A cuando empieza a escaparse */
   #plan .btn.gigante {                                       /* Plan B cuando ocupa toda la pantalla */
-    position: fixed; inset: 52px 0 0 0; z-index: 20; border-radius: 0;
-    font-size: clamp(2rem, 11vw, 6rem); transform: none !important;
+    position: fixed; z-index: 20; margin: 0;
+    transition: left .7s ease-in-out, top .7s ease-in-out, width .7s ease-in-out, height .7s ease-in-out,
+                font-size .7s ease-in-out, border-radius .7s ease-in-out;
   }
 
   /* ---------- REPRODUCTOR DE MÚSICA (arriba de todo) ---------- */
@@ -693,9 +694,10 @@
     plan.append(h, opciones);
 
     // ---- Plan A se escapa, se achica, y Plan B crece ----
-    const INTENTOS_MAXIMOS = 6;   // cantidad de intentos hasta que Plan B ocupa toda la pantalla
+    const INTENTOS_MAXIMOS = 8;   // cantidad de intentos hasta que Plan B ocupa toda la pantalla
     let intentos = 0;
     let ultimoEscape = 0;
+    let escalaB_actual = 1;
     function esquivar(e) {
       if (e) e.preventDefault();
       if (botonB.classList.contains('gigante')) return;
@@ -706,13 +708,33 @@
       [botonA, botonB].forEach(b => { b.style.animation = 'none'; b.style.opacity = '1'; });
 
       if (intentos >= INTENTOS_MAXIMOS) {
-        botonA.style.display = 'none';
+        botonA.style.transition = 'transform .4s ease-in';
+        botonA.style.transform += ' scale(0)';   // Plan A desaparece achicándose
+        // Plan B se estira suave desde donde está hasta cubrir toda la pantalla
+        const r = botonB.getBoundingClientRect();
+        const letraActual = parseFloat(getComputedStyle(botonB).fontSize) * escalaB_actual;
+        botonB.style.transition = 'none';
+        botonB.style.transform = 'none';
+        botonB.style.left = r.left + 'px';
+        botonB.style.top = r.top + 'px';
+        botonB.style.width = r.width + 'px';
+        botonB.style.height = r.height + 'px';
+        botonB.style.fontSize = letraActual + 'px';
         botonB.classList.add('gigante');
+        botonB.offsetWidth;   // fuerza al navegador a tomar el punto de partida
+        botonB.style.transition = '';
+        botonB.style.left = '0px';
+        botonB.style.top = '52px';
+        botonB.style.width = '100vw';
+        botonB.style.height = 'calc(100vh - 52px)';
+        botonB.style.fontSize = 'clamp(2rem, 11vw, 6rem)';
+        botonB.style.borderRadius = '0';
         return;
       }
 
-      const escalaA = 1 - intentos * 0.13;   // Plan A se achica un 13% por intento
-      const escalaB = 1 + intentos * 0.45;   // Plan B crece un 45% por intento
+      const escalaA = 1 - intentos * 0.09;   // Plan A se achica un 9% por intento
+      const escalaB = 1 + intentos * 0.22;   // Plan B crece un 22% por intento
+      escalaB_actual = escalaB;
       botonB.style.transform = `scale(${escalaB})`;
 
       const rectA = botonA.getBoundingClientRect();
@@ -730,17 +752,23 @@
       const altoB = botonB.offsetHeight * escalaB;
       const margen = 12;
       const arriba = 64;   // debajo de la barra de música
-      let x, y, pruebas = 0;
+      const xAnterior = parseFloat(botonA.style.left);
+      const yAnterior = parseFloat(botonA.style.top);
+      const saltoMinimo = Math.min(innerWidth, innerHeight) * 0.35;   // que se aleje bastante de donde estaba
+      let x, y, pruebas = 0, pisaB, muyCerca;
       do {
         x = margen + Math.random() * (innerWidth - rectA.width - margen * 2);
         y = arriba + Math.random() * (innerHeight - rectA.height - arriba - margen);
+        pisaB = x < centroB_x + anchoB / 2 + margen && x + rectA.width > centroB_x - anchoB / 2 - margen &&
+                y < centroB_y + altoB / 2 + margen && y + rectA.height > centroB_y - altoB / 2 - margen;
+        muyCerca = Math.hypot(x - xAnterior, y - yAnterior) < saltoMinimo;
         pruebas++;
-      } while (pruebas < 40 &&
-               x < centroB_x + anchoB / 2 + margen && x + rectA.width > centroB_x - anchoB / 2 - margen &&
-               y < centroB_y + altoB / 2 + margen && y + rectA.height > centroB_y - altoB / 2 - margen);
+      } while (pruebas < 60 && (pisaB || muyCerca));
+      // ángulo torcido al azar, entre 12° y 40° para un lado o el otro
+      const giro = (12 + Math.random() * 28) * (Math.random() < .5 ? -1 : 1);
       botonA.style.left = x + 'px';
       botonA.style.top = y + 'px';
-      botonA.style.transform = `scale(${escalaA})`;
+      botonA.style.transform = `rotate(${giro}deg) scale(${escalaA})`;
     }
     botonA.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') esquivar(e); });
     botonA.addEventListener('pointerdown', esquivar);
