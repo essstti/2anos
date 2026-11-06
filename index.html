@@ -678,7 +678,9 @@
   // =====================================================
   //  PLAN DE HOY: lo que aparece al tocar "Continuar sin ver"
   // =====================================================
+  let ronda = 0;   // cambia cada vez que se entra de nuevo; así se ignoran pasos viejos que quedaron pendientes
   function armarPlan() {
+    ronda++;
     const p3 = $('pantalla3');
     p3.innerHTML = '';
     const plan = document.createElement('div');
@@ -776,7 +778,7 @@
     botonA.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') esquivar(e); });
     botonA.addEventListener('pointerdown', esquivar);
     botonA.addEventListener('click', e => e.preventDefault());   // Plan A nunca se puede elegir 😏
-    botonB.addEventListener('click', () => elegirPlan('B'));
+    botonB.addEventListener('click', () => elegirPlan('B'), { once: true });   // un solo toque cuenta (evita la pregunta duplicada)
     // mismos corazones y estrellas flotando que en la pantalla del título
     for (let i = 0; i < 28; i++) {
       const img = document.createElement('img');
@@ -814,14 +816,16 @@
 
   function mostrarPregunta(n) {
     const anterior = $('plan');
+    const miRonda = ronda;
     if (anterior) {                       // la pantalla anterior se desvanece y después aparece la pregunta
       anterior.classList.add('sale');
-      setTimeout(() => { anterior.remove(); armarPregunta(n); }, 450);
-    } else armarPregunta(n);
+      setTimeout(() => { anterior.remove(); armarPregunta(n, miRonda); }, 450);
+    } else armarPregunta(n, miRonda);
   }
 
-  function armarPregunta(n) {
+  function armarPregunta(n, miRonda) {
     const p3 = $('pantalla3');
+    if (miRonda !== ronda || pantalla !== 'p3' || p3.dataset.modo !== 'continuar') return;   // ya salió de esta pantalla
     if (n >= PREGUNTAS.length) { terminarPreguntas(); return; }
     const { pregunta, opciones } = PREGUNTAS[n];
     const plan = document.createElement('div');
@@ -855,7 +859,7 @@
           otras.forEach(el => { el.style.transform = 'translateX(-100vw)'; el.style.opacity = '0'; });
           b.style.transform = 'translateX(100vw)';
           b.style.opacity = '0';
-          setTimeout(() => { plan.remove(); armarPregunta(n + 1); }, 750);
+          setTimeout(() => { plan.remove(); armarPregunta(n + 1, miRonda); }, 750);
         }, 500);
       });
       caja.appendChild(b);
