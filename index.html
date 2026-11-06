@@ -108,12 +108,21 @@
     font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; text-transform: uppercase;
     font-size: clamp(1.3rem, 6.5vw, 2.8rem); line-height: 1.3; text-align: center; color: #ff3b5c;
     text-shadow: 0 .07em 0 #fff, .05em .07em 0 #fff, -.05em .07em 0 #fff;
-    animation: sube 1.1s cubic-bezier(.2,.8,.3,1) both;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: .6em;
   }
+  /* cada palabra sube desde abajo, una atrás de otra (igual que el título anterior) */
+  #plan h2 span { display: inline-block; opacity: 0; animation: sube 1.3s cubic-bezier(.2,.8,.3,1) forwards; animation-delay: calc(var(--i) * .55s); }
+  #plan h2.pulse { animation: beat 1.8s ease-in-out infinite; }
   #plan .opciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6em; }
-  #plan .btn { font-size: clamp(.8rem, 3.6vw, 1.1rem); padding: 1.2em 1.8em; opacity: 0; animation: pop .5s ease-out forwards; }
-  #plan .btn:nth-child(1) { animation-delay: 1.1s; }
-  #plan .btn:nth-child(2) { animation-delay: 1.35s; }
+  #plan .btn { font-size: clamp(.8rem, 3.6vw, 1.1rem); padding: 1.2em 1.8em; opacity: 0; animation: pop .5s ease-out forwards;
+    transition: transform .35s ease, left .35s ease, top .35s ease; }
+  #plan .btn:nth-child(1) { animation-delay: 2.4s; }
+  #plan .btn:nth-child(2) { animation-delay: 2.65s; }
+  #plan .btn.huye { position: fixed; z-index: 5; }           /* Plan A cuando empieza a escaparse */
+  #plan .btn.gigante {                                       /* Plan B cuando ocupa toda la pantalla */
+    position: fixed; inset: 52px 0 0 0; z-index: 20; border-radius: 0;
+    font-size: clamp(2rem, 11vw, 6rem); transform: none !important;
+  }
 
   /* ---------- REPRODUCTOR DE MÚSICA (arriba de todo) ---------- */
   #musica { position: fixed; top: 0; left: 0; right: 0; z-index: 50; font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; color: #fff; }
@@ -663,17 +672,80 @@
     const plan = document.createElement('div');
     plan.id = 'plan';
     const h = document.createElement('h2');
-    h.textContent = 'Plan de hoy';
+    const PALABRAS = ['¿Plan', 'de', 'hoy?'];
+    PALABRAS.forEach((p, i) => {
+      const s = document.createElement('span');
+      s.textContent = p;
+      s.style.setProperty('--i', i);
+      h.appendChild(s);
+    });
+    h.lastChild.addEventListener('animationend', () => h.classList.add('pulse'));
+
     const opciones = document.createElement('div');
     opciones.className = 'opciones';
-    [['Plan A', 'rojo', 'A'], ['Plan B', 'celeste', 'B']].forEach(([t, cls, cual]) => {
-      const b = document.createElement('button');
-      b.className = 'btn ' + cls;
-      b.textContent = t;
-      b.addEventListener('click', () => elegirPlan(cual));
-      opciones.appendChild(b);
-    });
+    const botonA = document.createElement('button');
+    botonA.className = 'btn rojo';
+    botonA.textContent = 'Plan A';
+    const botonB = document.createElement('button');
+    botonB.className = 'btn celeste';
+    botonB.textContent = 'Plan B';
+    opciones.append(botonA, botonB);
     plan.append(h, opciones);
+
+    // ---- Plan A se escapa, se achica, y Plan B crece ----
+    const INTENTOS_MAXIMOS = 6;   // cantidad de intentos hasta que Plan B ocupa toda la pantalla
+    let intentos = 0;
+    let ultimoEscape = 0;
+    function esquivar(e) {
+      if (e) e.preventDefault();
+      if (botonB.classList.contains('gigante')) return;
+      const ahora = Date.now();
+      if (ahora - ultimoEscape < 350) return;   // evita que cuente dos veces el mismo intento
+      ultimoEscape = ahora;
+      intentos++;
+      [botonA, botonB].forEach(b => { b.style.animation = 'none'; b.style.opacity = '1'; });
+
+      if (intentos >= INTENTOS_MAXIMOS) {
+        botonA.style.display = 'none';
+        botonB.classList.add('gigante');
+        return;
+      }
+
+      const escalaA = 1 - intentos * 0.13;   // Plan A se achica un 13% por intento
+      const escalaB = 1 + intentos * 0.45;   // Plan B crece un 45% por intento
+      botonB.style.transform = `scale(${escalaB})`;
+
+      const rectA = botonA.getBoundingClientRect();
+      if (!botonA.classList.contains('huye')) {
+        botonA.style.left = rectA.left + 'px';
+        botonA.style.top = rectA.top + 'px';
+        botonA.classList.add('huye');
+        botonA.offsetWidth;   // fuerza al navegador a aplicar la posición antes de animar
+      }
+      // dónde va a quedar Plan B ya agrandado (para que Plan A no caiga encima)
+      const rectB = botonB.getBoundingClientRect();
+      const centroB_x = rectB.left + rectB.width / 2;
+      const centroB_y = rectB.top + rectB.height / 2;
+      const anchoB = botonB.offsetWidth * escalaB;
+      const altoB = botonB.offsetHeight * escalaB;
+      const margen = 12;
+      const arriba = 64;   // debajo de la barra de música
+      let x, y, pruebas = 0;
+      do {
+        x = margen + Math.random() * (innerWidth - rectA.width - margen * 2);
+        y = arriba + Math.random() * (innerHeight - rectA.height - arriba - margen);
+        pruebas++;
+      } while (pruebas < 40 &&
+               x < centroB_x + anchoB / 2 + margen && x + rectA.width > centroB_x - anchoB / 2 - margen &&
+               y < centroB_y + altoB / 2 + margen && y + rectA.height > centroB_y - altoB / 2 - margen);
+      botonA.style.left = x + 'px';
+      botonA.style.top = y + 'px';
+      botonA.style.transform = `scale(${escalaA})`;
+    }
+    botonA.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') esquivar(e); });
+    botonA.addEventListener('pointerdown', esquivar);
+    botonA.addEventListener('click', e => e.preventDefault());   // Plan A nunca se puede elegir 😏
+    botonB.addEventListener('click', () => elegirPlan('B'));
     // mismos corazones y estrellas flotando que en la pantalla del título
     for (let i = 0; i < 28; i++) {
       const img = document.createElement('img');
