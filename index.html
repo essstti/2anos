@@ -127,12 +127,15 @@
   #plan .btn:nth-child(1) { animation-delay: 1.1s; }
   #plan .btn:nth-child(2) { animation-delay: 1.35s; }
   /* solapas de las preguntas (mismo estilo que las de las fotos) */
+  #plan .tab.chica { font-size: clamp(.5rem, 2.2vw, .65rem); }   /* opciones chiquitas */
   #plan .tab { font-size: clamp(.65rem, 2.9vw, .95rem); opacity: 0; animation: cae .9s ease-out forwards;
+    transition: transform .45s ease-out, left .45s ease-out, top .45s ease-out;
     animation-delay: calc(1.1s + var(--k) * .25s); }
   #plan .tab.activa { opacity: 1; }
   #plan.sale { opacity: 0; transition: opacity .45s ease; }
-  #plan .btn.huye { position: fixed; z-index: 5; }           /* Plan A cuando empieza a escaparse */
-  #plan .btn.gigante {                                       /* Plan B cuando ocupa toda la pantalla */
+  #plan .huye { position: fixed; z-index: 5; }               /* el botón que se escapa (Plan A, Pastas) */
+  #plan .gigante {                                           /* el botón que crece hasta ocupar la pantalla */
+    display: flex; align-items: center; justify-content: center; gap: .5em;
     position: fixed; z-index: 20; margin: 0;
     transition: left .7s ease-in-out, top .7s ease-in-out, width .7s ease-in-out, height .7s ease-in-out,
                 font-size .7s ease-in-out, border-radius .7s ease-in-out;
@@ -680,27 +683,11 @@
   // =====================================================
   //  PLAN DE HOY: lo que aparece al tocar "Continuar sin ver"
   // =====================================================
-  let ronda = 0;   // cambia cada vez que se entra de nuevo; así se ignoran pasos viejos que quedaron pendientes
-  function armarPlan() {
-    ronda++;
-    const p3 = $('pantalla3');
-    p3.innerHTML = '';
-    const plan = document.createElement('div');
-    plan.id = 'plan';
-    const h = tituloPixel('¿Plan de hoy?');
-
-    const opciones = document.createElement('div');
-    opciones.className = 'opciones';
-    const botonA = document.createElement('button');
-    botonA.className = 'btn rojo';
-    botonA.textContent = 'Plan A';
-    const botonB = document.createElement('button');
-    botonB.className = 'btn celeste';
-    botonB.textContent = 'Plan B';
-    opciones.append(botonA, botonB);
-    plan.append(h, opciones);
-
-    // ---- Plan A se escapa, se achica, y Plan B crece ----
+  // =====================================================
+  //  ESCAPE: "botonA" se escapa y se achica, "botonB" crece hasta ocupar la pantalla
+  //  (se usa en Plan A / Plan B y en Pastas / Hamburguesa)
+  // =====================================================
+  function hacerEscapar(botonA, botonB) {
     const INTENTOS_MAXIMOS = 8;   // cantidad de intentos hasta que Plan B ocupa toda la pantalla
     let intentos = 0;
     let ultimoEscape = 0;
@@ -734,7 +721,9 @@
         botonB.style.top = '52px';
         botonB.style.width = '100vw';
         botonB.style.height = 'calc(100vh - 52px)';
-        botonB.style.fontSize = 'clamp(2rem, 11vw, 6rem)';
+        // letra lo más grande posible sin que el texto se salga de la pantalla
+        const letras = botonB.textContent.trim().length + 3;
+        botonB.style.fontSize = Math.min(96, innerWidth * 0.95 / letras) + 'px';
         botonB.style.borderRadius = '0';
         return;
       }
@@ -780,6 +769,29 @@
     botonA.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') esquivar(e); });
     botonA.addEventListener('pointerdown', esquivar);
     botonA.addEventListener('click', e => e.preventDefault());   // Plan A nunca se puede elegir 😏
+  }
+
+  let ronda = 0;   // cambia cada vez que se entra de nuevo; así se ignoran pasos viejos que quedaron pendientes
+  function armarPlan() {
+    ronda++;
+    const p3 = $('pantalla3');
+    p3.innerHTML = '';
+    const plan = document.createElement('div');
+    plan.id = 'plan';
+    const h = tituloPixel('¿Plan de hoy?');
+
+    const opciones = document.createElement('div');
+    opciones.className = 'opciones';
+    const botonA = document.createElement('button');
+    botonA.className = 'btn rojo';
+    botonA.textContent = 'Plan A';
+    const botonB = document.createElement('button');
+    botonB.className = 'btn celeste';
+    botonB.textContent = 'Plan B';
+    opciones.append(botonA, botonB);
+    plan.append(h, opciones);
+
+    hacerEscapar(botonA, botonB);   // Plan A se escapa, se achica, y Plan B crece
     botonB.addEventListener('click', () => elegirPlan('B'), { once: true });   // un solo toque cuenta (evita la pregunta duplicada)
     // mismos corazones y estrellas flotando que en la pantalla del título
     for (let i = 0; i < 28; i++) {
@@ -811,6 +823,8 @@
   //  >>> AGREGÁ O CAMBIÁ PREGUNTAS ACÁ: [texto de la solapa, emoji] <<<
   // =====================================================
   const PREGUNTAS = [
+    // escapa: la opción que se escapa al querer tocarla · gana: la que crece hasta ocupar la pantalla
+    { pregunta: '¿Comida de hoy?', opciones: [['Pastas', '🍝'], ['Hamburguesa', '🍔']], escapa: 'Pastas', gana: 'Hamburguesa', chica: true },
     { pregunta: '¿Bebida de hoy?', opciones: [['Aperol', '🍊'], ['Santa Julia', '🥂'], ['Gin', '🍸']] },
     { pregunta: '¿Plan de hoy?',   opciones: [['Vueltin', '🚗'], ['Peli', '🍿'], ['Serie', '📺']] }
   ];
@@ -829,7 +843,8 @@
     const p3 = $('pantalla3');
     if (miRonda !== ronda || pantalla !== 'p3' || p3.dataset.modo !== 'continuar') return;   // ya salió de esta pantalla
     if (n >= PREGUNTAS.length) { terminarPreguntas(); return; }
-    const { pregunta, opciones } = PREGUNTAS[n];
+    const { pregunta, opciones, escapa, gana, chica } = PREGUNTAS[n];
+    let botonEscapa = null, botonGana = null;
     const plan = document.createElement('div');
     plan.id = 'plan';
     const h = tituloPixel(pregunta);
@@ -839,11 +854,17 @@
     let elegida = false;
     opciones.forEach(([texto, emoji], k) => {
       const b = document.createElement('button');
-      b.className = 'tab';
+      b.className = chica ? 'tab chica' : 'tab';
       b.style.setProperty('--k', k);
       const t = document.createElement('span'); t.textContent = texto;
       const e = document.createElement('span'); e.className = 'e'; e.textContent = emoji;
       b.append(t, e);
+      if (texto === gana) botonGana = b;
+      if (texto === escapa) {               // esta opción nunca se puede elegir: se escapa
+        botonEscapa = b;
+        caja.appendChild(b);
+        return;
+      }
       b.addEventListener('click', () => {
         if (elegida) return;
         elegida = true;
@@ -869,6 +890,7 @@
     });
     plan.append(h, caja);
     p3.appendChild(plan);
+    if (botonEscapa && botonGana) hacerEscapar(botonEscapa, botonGana);
   }
 
   function terminarPreguntas() {
