@@ -102,7 +102,7 @@
   /* ---------- PLAN DE HOY (al tocar "Continuar sin ver") ---------- */
   #plan {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.2em;
-    padding: 0 16px;
+    padding: 0 16px; position: relative; z-index: 2;
   }
   #plan h2 {
     font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; text-transform: uppercase;
@@ -674,6 +674,17 @@
       opciones.appendChild(b);
     });
     plan.append(h, opciones);
+    // mismos corazones y estrellas flotando que en la pantalla del título
+    for (let i = 0; i < 28; i++) {
+      const img = document.createElement('img');
+      img.className = 'float';
+      img.src = sprites[Math.floor(Math.random() * sprites.length)];
+      img.style.width = (9 + Math.floor(Math.random() * 6)) + 'px';
+      img.style.left = Math.random() * 95 + 'vw';
+      img.style.animationDuration = (16 + Math.random() * 12) + 's';
+      img.style.animationDelay = (-Math.random() * 28) + 's';
+      p3.appendChild(img);
+    }
     p3.appendChild(plan);
   }
   function elegirPlan(cual) {
