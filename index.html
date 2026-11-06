@@ -99,6 +99,22 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* ---------- PLAN DE HOY (al tocar "Continuar sin ver") ---------- */
+  #plan {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.2em;
+    padding: 0 16px;
+  }
+  #plan h2 {
+    font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; text-transform: uppercase;
+    font-size: clamp(1.3rem, 6.5vw, 2.8rem); line-height: 1.3; text-align: center; color: #ff3b5c;
+    text-shadow: 0 .07em 0 #fff, .05em .07em 0 #fff, -.05em .07em 0 #fff;
+    animation: sube 1.1s cubic-bezier(.2,.8,.3,1) both;
+  }
+  #plan .opciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6em; }
+  #plan .btn { font-size: clamp(.8rem, 3.6vw, 1.1rem); padding: 1.2em 1.8em; opacity: 0; animation: pop .5s ease-out forwards; }
+  #plan .btn:nth-child(1) { animation-delay: 1.1s; }
+  #plan .btn:nth-child(2) { animation-delay: 1.35s; }
+
   /* ---------- REPRODUCTOR DE MÚSICA (arriba de todo) ---------- */
   #musica { position: fixed; top: 0; left: 0; right: 0; z-index: 50; font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; color: #fff; }
   #mbar {
@@ -347,6 +363,7 @@
       setTimeout(() => {
         p3.classList.add('show');
         if (modo === 'historia') armarHistoria();
+        else armarPlan();
         navegando = false;
       }, 800);
     });
@@ -635,6 +652,33 @@
       item.addEventListener('click', () => abrirVisor(item, it));
       gal.appendChild(item);
     });
+  }
+
+  // =====================================================
+  //  PLAN DE HOY: lo que aparece al tocar "Continuar sin ver"
+  // =====================================================
+  function armarPlan() {
+    const p3 = $('pantalla3');
+    p3.innerHTML = '';
+    const plan = document.createElement('div');
+    plan.id = 'plan';
+    const h = document.createElement('h2');
+    h.textContent = 'Plan de hoy';
+    const opciones = document.createElement('div');
+    opciones.className = 'opciones';
+    [['Plan A', 'rojo', 'A'], ['Plan B', 'celeste', 'B']].forEach(([t, cls, cual]) => {
+      const b = document.createElement('button');
+      b.className = 'btn ' + cls;
+      b.textContent = t;
+      b.addEventListener('click', () => elegirPlan(cual));
+      opciones.appendChild(b);
+    });
+    plan.append(h, opciones);
+    p3.appendChild(plan);
+  }
+  function elegirPlan(cual) {
+    // >>> ACÁ VA LO QUE PASA AL ELEGIR CADA PLAN (todavía sin definir) <<<
+    console.log('Eligió el plan', cual);
   }
 
   // ---- Zoom + dar vuelta ----
