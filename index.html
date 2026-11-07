@@ -793,7 +793,19 @@
     return pol;
   }
 
+  // Todas las fotos mezcladas al azar (se usa cuando no hay ninguna solapa elegida)
+  let mezcla = [];
+  function mezclar(lista) {
+    const m = [...lista];
+    for (let i = m.length - 1; i > 0; i--) {   // mezcla de Fisher-Yates: cada orden es igual de probable
+      const j = Math.floor(Math.random() * (i + 1));
+      [m[i], m[j]] = [m[j], m[i]];
+    }
+    return m;
+  }
+
   function armarHistoria() {
+    mezcla = mezclar(FOTOS);   // una mezcla nueva cada vez que entra al Modo historia
     const p3 = $('pantalla3');
     p3.innerHTML = '';
     const tabs = document.createElement('div');
@@ -819,7 +831,8 @@
     const gal = $('galeria');
     gal.scrollTop = 0;
     gal.innerHTML = '';
-    const lista = FOTOS.filter(f => !filtro || f.cat === filtro);
+    const lista = filtro ? FOTOS.filter(f => f.cat === filtro)   // solapa elegida: solo esas, en orden
+                         : mezcla;                                // sin solapa: todas mezcladas
     if (!lista.length) {
       const v = document.createElement('div');
       v.className = 'vacio';
