@@ -213,6 +213,7 @@
   }
   .tab { display: inline-flex; align-items: center; gap: .6em; }
   .tab .e { font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; font-size: 1.5em; line-height: 1; text-shadow: none; }
+  .tab .e img { height: 1.2em; width: auto; display: block; image-rendering: pixelated; }   /* íconos pixelados propios */
   .tab:active { transform: translateY(2px); }
   .tab.activa { background: #5d9c3f; box-shadow: inset -4px -4px 0 #3b6e22, inset 4px 4px 0 #8fd35e; }
   #galeria {
@@ -998,9 +999,41 @@
     { pregunta: '¿Comida de hoy?', opciones: [['Pastas', '🍝'], ['Hamburguesa', '🍔']], escapa: 'Pastas', gana: 'Hamburguesa', chica: true },
     { pregunta: '¿Bebida de hoy?', opciones: [['Aperol', '🍊'], ['Santa Julia', '🥂'], ['Gin', '🍸']] },
     { pregunta: '¿Plan de hoy?',   opciones: [['Vueltin', '🚗'], ['Peli', '🍿'], ['Serie', '📺']] },
-    { pregunta: '¿Postre de hoy?', opciones: [['Chocolate', '🍫'], ['Chocolinas', '🍪'], ['Gomitas', '🍬']] }
+    { pregunta: '¿Postre de hoy?', opciones: [['Chocolate', '🍫'], ['Chocolinas', 'icono:chocotorta'], ['Gomitas', '🍬']] }
   ];
   const respuestas = [];
+
+  // Íconos pixelados propios para cuando no existe un emoji (se usan con 'icono:nombre')
+  // N = galletita negra · C = crema · T = cacao de arriba · B = borde
+  const ICONOS = {
+    chocotorta: [   // porción de chocotorta: arriba cacao en diagonal, al frente capas de galletita y crema
+      'BB............',
+      'BTBBB.........',
+      'BTTTTBBB......',
+      'BTTTTTTTBBB...',
+      'BTTTTTTTTTTBBB',
+      'BCCCCCCCCCCCCB',
+      'BNNNNNNNNNNNNB',
+      'BCCCCCCCCCCCCB',
+      'BNNNNNNNNNNNNB',
+      'BCCCCCCCCCCCCB',
+      'BNNNNNNNNNNNNB',
+      'BBBBBBBBBBBBBB'
+    ]
+  };
+  const COLORES_ICONO = { B: '#000', T: '#4a2a1a', C: '#f1dcb0', N: '#1c1210' };
+  function iconoPixel(nombre) {
+    const filas = ICONOS[nombre];
+    let rects = '';
+    filas.forEach((fila, y) => [...fila].forEach((c, x) => {
+      if (COLORES_ICONO[c]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${COLORES_ICONO[c]}"/>`;
+    }));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${filas[0].length} ${filas.length}" shape-rendering="crispEdges">${rects}</svg>`;
+    const img = document.createElement('img');
+    img.src = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    img.alt = nombre;
+    return img;
+  }
 
   function mostrarPregunta(n) {
     const anterior = $('plan');
@@ -1029,7 +1062,9 @@
       b.className = chica ? 'tab chica' : 'tab';
       b.style.setProperty('--k', k);
       const t = document.createElement('span'); t.textContent = texto;
-      const e = document.createElement('span'); e.className = 'e'; e.textContent = emoji;
+      const e = document.createElement('span'); e.className = 'e';
+      if (emoji.startsWith('icono:')) e.appendChild(iconoPixel(emoji.slice(6)));   // ícono pixelado propio
+      else e.textContent = emoji;
       b.append(t, e);
       if (texto === gana) botonGana = b;
       if (texto === escapa) {               // esta opción nunca se puede elegir: se escapa
