@@ -251,6 +251,14 @@
   .carta.pantalla .texto { opacity: 1; transition: opacity .6s ease .6s; }   /* aparece cuando ya ocupa la pantalla */
   .carta .texto p { margin: 0 0 2.1em; }   /* un renglón vacío entre párrafos */
   .carta .texto p.firma { text-align: right; padding-right: 2em; }
+  /* dibujo pixelado del final de la carta (escena de 80x50 pixeles) */
+  .escena-noche { position: relative; width: min(100%, 440px); aspect-ratio: 80 / 50; margin: 1.5em auto .5em;
+    border: 4px solid #000; box-shadow: 4px 4px 0 rgba(0, 0, 0, .35); overflow: hidden; }
+  .escena-noche img { position: absolute; display: block; image-rendering: pixelated; }
+  .escena-noche .fondo  { inset: 0; width: 100%; height: 100%; }
+  .escena-noche .luna   { left: 38.125%; top: 4%; width: 23.75%; animation: luna-sube-baja 4.5s steps(4) infinite alternate; }
+  .escena-noche .pareja { left: 40.625%; top: 52%; width: 18.75%; }
+  @keyframes luna-sube-baja { from { transform: translateY(0); } to { transform: translateY(21%); } }   /* baja 4 pixeles y vuelve */
   .carta .texto .corazon-carta { color: #ff1f3d; font-family: sans-serif; font-weight: bold; font-size: 2em; line-height: 0; vertical-align: -.15em; }
   .carta .texto .btn { display: block; margin: 2em auto .5em; }
 
@@ -1469,6 +1477,11 @@
       texto.append(p);
     });
     const firma = document.createElement('p'); firma.className = 'firma'; firma.textContent = CARTA_FIRMA; texto.append(firma);
+    // dibujo pixelado al final: la luna (sube y baja) y nosotros de la mano
+    const escena = document.createElement('div');
+    escena.className = 'escena-noche';
+    escena.innerHTML = '<img class="fondo" src="img/noche.svg" alt=""><img class="luna" src="img/luna.svg" alt=""><img class="pareja" src="img/pareja.svg" alt="">';
+    texto.append(escena);
     const seguir = document.createElement('button');
     seguir.className = 'btn rojo';
     seguir.textContent = 'Continuar';
