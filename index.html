@@ -182,10 +182,9 @@
   /* emojis de la pantalla final */
   #plan .emoji, #plan .deco { font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
     text-shadow: none; font-weight: normal; line-height: 1; }
-  #plan h2.te-amo .emoji { display: inline-block; margin-left: .3em; vertical-align: -.12em; }   /* alineado con las letras */
-  #plan .emoji-pixel { display: block; height: 1.05em; width: auto; image-rendering: pixelated; }   /* emoji pixelado */
+  #plan h2.te-amo .emoji { font-size: .9em; margin-left: .3em; vertical-align: .02em; }   /* alineado con las letras */
   #plan .excl { position: relative; display: inline-block; }
-  #plan .deco { position: absolute; font-size: .5em; }
+  #plan .deco { position: absolute; font-size: .42em; }
   #plan .deco.arriba   { bottom: 100%; left: 50%; transform: translate(-50%, -.15em); }   /* arriba de la punta */
   #plan .deco.derecha  { top: 0; left: 100%; transform: translateX(.15em); }              /* a la derecha de la punta */
   #plan .deco.diagonal { bottom: 100%; left: 100%; transform: translate(.05em, -.05em); } /* a 45°, arriba a la derecha */
@@ -1269,26 +1268,8 @@
   const FINAL_TITULO = '¡Felices dos años!';
   const FINAL_TEXTO = 'Espero te haya gustado';
   const FINAL_TE_AMO = 'Te amo';
-  const FINAL_CORAZON = '💘';                  // al lado de "Te amo" (se muestra pixelado)
-  const FINAL_EMOJIS = ['🌙', '🥰', '❤️'];      // alrededor del último "!": arriba, a la derecha, en diagonal (pixelados)
-
-  // Emoji del celular, pero pixelado: se dibuja en un cuadrito chico (16x16) y se agranda sin suavizar
-  const PIXELES_EMOJI = 16;   // más chico = más pixelado
-  function emojiPixel(emoji) {
-    const n = PIXELES_EMOJI;
-    const c = document.createElement('canvas');
-    c.width = n; c.height = n;
-    const g = c.getContext('2d');
-    g.font = `${n * 0.86}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillText(emoji, n / 2, n / 2 + n * 0.06);
-    const img = document.createElement('img');
-    img.src = c.toDataURL();
-    img.alt = emoji;
-    img.className = 'emoji-pixel';
-    return img;
-  }
+  const FINAL_CORAZON = '💘';                  // al lado de "Te amo"
+  const FINAL_EMOJIS = ['🌙', '🥰', '❤️'];      // alrededor del último "!": arriba, a la derecha, en diagonal
   function recibirRegalo() {
     const anterior = $('plan');
     const miRonda = ronda;
@@ -1311,7 +1292,7 @@
         [['arriba', FINAL_EMOJIS[0]], ['derecha', FINAL_EMOJIS[1]], ['diagonal', FINAL_EMOJIS[2]]].forEach(([pos, emo]) => {
           const d = document.createElement('span');
           d.className = 'deco ' + pos;
-          d.appendChild(emojiPixel(emo));
+          d.textContent = emo;
           excl.append(d);
         });
         h.append(excl, document.createTextNode(FINAL_TITULO.slice(corte + 1)));
@@ -1324,7 +1305,7 @@
       teAmo.append(document.createTextNode(FINAL_TE_AMO));
       const corazon = document.createElement('span');
       corazon.className = 'emoji';
-      corazon.appendChild(emojiPixel(FINAL_CORAZON));
+      corazon.textContent = FINAL_CORAZON;
       teAmo.append(corazon);
       plan.append(h, texto, teAmo);
       $('pantalla3').appendChild(plan);
