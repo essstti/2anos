@@ -179,7 +179,15 @@
     animation: entraIzq 1.1s cubic-bezier(.2,.8,.3,1) .35s both; }
   #plan h2.te-amo { color: #ff1f3d; text-shadow: 0 .07em 0 #fff, .05em .07em 0 #fff, -.05em .07em 0 #fff; }
   #plan h2.te-amo.izq { animation-delay: .7s; }
-  #plan h2.te-amo img { height: .85em; width: auto; margin-left: .35em; vertical-align: -.05em; image-rendering: pixelated; }
+  /* emojis de la pantalla final */
+  #plan .emoji, #plan .deco { font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    text-shadow: none; font-weight: normal; line-height: 1; }
+  #plan h2.te-amo .emoji { font-size: .9em; margin-left: .3em; vertical-align: .02em; }   /* alineado con las letras */
+  #plan .excl { position: relative; display: inline-block; }
+  #plan .deco { position: absolute; font-size: .42em; }
+  #plan .deco.arriba   { bottom: 100%; left: 50%; transform: translate(-50%, -.15em); }   /* arriba de la punta */
+  #plan .deco.derecha  { top: 0; left: 100%; transform: translateX(.15em); }              /* a la derecha de la punta */
+  #plan .deco.diagonal { bottom: 100%; left: 100%; transform: translate(.05em, -.05em); } /* a 45°, arriba a la derecha */
   #plan .huye { position: fixed; z-index: 5; }               /* el botón que se escapa (Plan A, Pastas) */
   #plan .gigante {                                           /* el botón que crece hasta ocupar la pantalla */
     display: flex; align-items: center; justify-content: center; gap: .5em;
@@ -1260,6 +1268,8 @@
   const FINAL_TITULO = '¡Felices dos años!';
   const FINAL_TEXTO = 'Espero te haya gustado';
   const FINAL_TE_AMO = 'Te amo';
+  const FINAL_CORAZON = '💘';                  // al lado de "Te amo"
+  const FINAL_EMOJIS = ['🌙', '🥰', '❤️'];      // alrededor del último "!": arriba, a la derecha, en diagonal
   function recibirRegalo() {
     const anterior = $('plan');
     const miRonda = ronda;
@@ -1270,17 +1280,32 @@
       const plan = document.createElement('div');
       plan.id = 'plan';
       plan.classList.add('final');
-      const h = tituloPixel(FINAL_TITULO);
+      const h = tituloPixel('');
       h.classList.add('izq');
+      // el último "!" lleva 3 emojis chiquitos alrededor de su punta (se mueven junto con el título)
+      const corte = FINAL_TITULO.lastIndexOf('!');
+      h.append(document.createTextNode(corte >= 0 ? FINAL_TITULO.slice(0, corte) : FINAL_TITULO));
+      if (corte >= 0) {
+        const excl = document.createElement('span');
+        excl.className = 'excl';
+        excl.textContent = '!';
+        [['arriba', FINAL_EMOJIS[0]], ['derecha', FINAL_EMOJIS[1]], ['diagonal', FINAL_EMOJIS[2]]].forEach(([pos, emo]) => {
+          const d = document.createElement('span');
+          d.className = 'deco ' + pos;
+          d.textContent = emo;
+          excl.append(d);
+        });
+        h.append(excl, document.createTextNode(FINAL_TITULO.slice(corte + 1)));
+      }
       const texto = document.createElement('p');
       texto.className = 'final-texto';
       texto.textContent = FINAL_TEXTO;
       const teAmo = tituloPixel('');
       teAmo.classList.add('izq', 'te-amo');
       teAmo.append(document.createTextNode(FINAL_TE_AMO));
-      const corazon = document.createElement('img');
-      corazon.src = sprite(SMALL_HEART, '#ff1f3d');
-      corazon.alt = '';
+      const corazon = document.createElement('span');
+      corazon.className = 'emoji';
+      corazon.textContent = FINAL_CORAZON;
       teAmo.append(corazon);
       plan.append(h, texto, teAmo);
       $('pantalla3').appendChild(plan);
