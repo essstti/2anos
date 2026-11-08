@@ -172,6 +172,75 @@
     50%      { transform: translateY(-.2em); animation-timing-function: steps(1, end); }
   }
   #plan.sale { opacity: 0; transition: opacity .45s ease; }
+  /* ---------- contraseña de la carta ---------- */
+  #plan .clave-carta { display: flex; flex-direction: column; align-items: center; gap: 22px;
+    font-family: "Press Start 2P", "Courier New", monospace; color: #fff; animation: aparece .5s ease both; }
+  #plan .clave-carta label { font-size: clamp(.8rem, 3.6vw, 1.2rem); text-shadow: 3px 3px 0 #3f3f3f; text-transform: uppercase; }
+  #plan .clave-carta input { font-family: inherit; font-size: clamp(.75rem, 3.4vw, 1rem); color: #fff; caret-color: #fff;
+    background: rgba(0, 0, 0, .25); border: 4px solid #fff; border-radius: 0; outline: none;
+    width: min(76vw, 340px); padding: .9em 1em; text-align: center; letter-spacing: .2em; }
+  #plan .clave-carta .tab { opacity: 1; animation: none; }
+  @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---------- carta enrollada: cae, rebota suave; al tocarla se desata y se abre ---------- */
+  #plan.con-carta { justify-content: center; }
+  .carta-caida { animation: cae 1s ease-out both; }
+  .carta {
+    position: relative; width: min(78vw, 380px); height: 64px; margin: 0 auto; cursor: pointer;
+    border: 4px solid #000; box-shadow: 6px 6px 0 rgba(0, 0, 0, .45);
+    /* sombreado de cilindro: más claro en el medio, más oscuro arriba y abajo */
+    background: linear-gradient(#b8945a 0 12%, #d9b77a 12% 28%, #f1dcb0 28% 62%, #d9b77a 62% 82%, #b8945a 82% 100%);
+    transition: width .9s ease-in-out, height .9s ease-in-out, background .4s;
+  }
+  .carta.enrollada::before, .carta.enrollada::after {   /* tapitas de los costados del rollo */
+    content: ''; position: absolute; top: -4px; bottom: -4px; width: 10px; background: #8a6a3a; border: 4px solid #000;
+  }
+  .carta.enrollada::before { left: -14px; }
+  .carta.enrollada::after { right: -14px; }
+  .carta.listo.enrollada:not(.desatando) { animation: rebota-carta 1.3s infinite both; }
+  @keyframes rebota-carta {
+    0%, 100% { transform: translateY(0); animation-timing-function: steps(1, end); }
+    50%      { transform: translateY(-6px); animation-timing-function: steps(1, end); }
+  }
+  /* la cinta roja y el moño */
+  .lazo { position: absolute; inset: 0; pointer-events: none; }
+  .lazo .cinta { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 16px; transform: translateX(-50%);
+    background: #ff1f3d; border-left: 3px solid #000; border-right: 3px solid #000; }
+  .lazo .moño { position: absolute; top: 50%; width: 22px; height: 22px; background: #ff1f3d; border: 3px solid #000; }
+  .lazo .moño.izq { left: 50%; transform: translate(-115%, -50%) rotate(45deg); }
+  .lazo .moño.der { left: 50%; transform: translate(15%, -50%) rotate(45deg); }
+  .lazo .nudo { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%);
+    background: #c4122e; border: 3px solid #000; }
+  /* al desatarse: cada parte de la cinta se cae para un lado */
+  .carta.desatando .lazo .cinta  { animation: cinta-cae .65s ease-in forwards; }
+  .carta.desatando .lazo .moño.izq { animation: moño-izq .65s ease-in forwards; }
+  .carta.desatando .lazo .moño.der { animation: moño-der .65s ease-in forwards; }
+  .carta.desatando .lazo .nudo   { animation: nudo-cae .65s ease-in forwards; }
+  @keyframes cinta-cae { to { transform: translate(-50%, 120px) scaleY(.3); opacity: 0; } }
+  @keyframes moño-izq { to { transform: translate(-260%, 60px) rotate(-120deg); opacity: 0; } }
+  @keyframes moño-der { to { transform: translate(160%, 60px) rotate(200deg); opacity: 0; } }
+  @keyframes nudo-cae { to { transform: translate(-50%, 140px) rotate(90deg); opacity: 0; } }
+  /* abierta: grande, con los rollos arriba y abajo, y se desliza para leer */
+  .carta.abierta {
+    width: min(92vw, 640px); height: calc(100vh - 150px); cursor: default; animation: none;
+    background: #f1dcb0;
+  }
+  .carta.abierta::before, .carta.abierta::after {    /* los rollos de arriba y abajo */
+    content: ''; position: absolute; left: -12px; right: -12px; height: 18px; z-index: 2;
+    background: linear-gradient(#b8945a 0 30%, #d9b77a 30% 70%, #b8945a 70%); border: 4px solid #000;
+  }
+  .carta.abierta::before { top: -14px; }
+  .carta.abierta::after { bottom: -14px; }
+  .carta .papel { position: absolute; inset: 0; overflow: hidden; }
+  .carta.abierta .papel { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .carta .texto {
+    padding: 34px clamp(16px, 5vw, 36px) 40px; color: #1a1210; opacity: 0;
+    font-family: "Press Start 2P", "Courier New", monospace; font-size: clamp(.55rem, 2.3vw, .72rem); line-height: 2.1;
+  }
+  .carta.abierta .texto { opacity: 1; transition: opacity .6s ease .9s; }   /* aparece cuando terminó de abrirse */
+  .carta .texto p { margin: 0 0 1.6em; }
+  .carta .texto .btn { display: block; margin: 2em auto .5em; }
+
   /* pantalla final: primero entra el título; después "Te amo" y "Espero te haya gustado" (y los emojis de a uno) */
   #plan.final { gap: 1.4em; }
   #plan h2.te-amo { color: #ff1f3d; text-shadow: 0 .07em 0 #fff, .05em .07em 0 #fff, -.05em .07em 0 #fff; }
@@ -1057,7 +1126,7 @@
   // =====================================================
   const PREGUNTAS = [
     // escapa: la opción que se escapa al querer tocarla · gana: la que crece hasta ocupar la pantalla
-    { pregunta: '¿Comida de hoy?', opciones: [['Pastas', '🍝'], ['Hamburguesa', '🍔']], escapa: 'Pastas', gana: 'Hamburguesa', chica: true },
+    { pregunta: '¿Comida de hoy?', opciones: [['Pastas', '🍝'], ['Hamburguesa', '🍔']], escapa: 'Pastas', gana: 'Hamburguesa' },
     { pregunta: '¿Bebida de hoy?', opciones: [['Aperol', '🍹'], ['Santa Julia', '🥂'], ['Gin', '🍸']] },
     { pregunta: '¿Postre de hoy?', opciones: [['Chocolate', '🍫'], ['Chocolinas', 'icono:chocotorta'], ['Gomitas', '🍬']] },
     // multiple: cuántas opciones se pueden elegir como máximo (aparece un botón "Listo" para confirmar)
@@ -1272,6 +1341,101 @@
   }
 
   // =====================================================
+  //  REGALO: contraseña -> carta enrollada -> se desata y se abre
+  //  >>> CAMBIÁ LA CONTRASEÑA Y EL TEXTO DE LA CARTA ACÁ <<<
+  //  (cada elemento de CARTA es un párrafo)
+  // =====================================================
+  const CLAVE_CARTA = 'valuyesti12';
+  const CARTA = [
+    'Valu:',
+    '(Esta es una carta de ejemplo. Pasame el texto y lo pongo acá, cada párrafo por separado.)',
+    'Párrafo de ejemplo número uno. Acá va lo que le quieras decir, todo lo largo que quieras: la carta se puede deslizar para arriba y para abajo para seguir leyendo.',
+    'Párrafo de ejemplo número dos. Podés contar cómo se conocieron, qué es lo que más te gusta de ella o algún recuerdo lindo de estos dos años.',
+    'Párrafo de ejemplo número tres. Lo que quieras: planes, promesas, chistes internos.',
+    'Párrafo de ejemplo número cuatro. Este texto está solo para mostrar cómo se ve una carta larga.',
+    'Párrafo de ejemplo número cinco. Más texto para que haya que bajar.',
+    'Párrafo de ejemplo número seis. Y un poco más.',
+    'Te amo,',
+    'Esti'
+  ];
+
+  // cambia de pantalla: la actual se desvanece y después se arma la siguiente
+  function cambiarPlan(armar) {
+    const anteriores = [...document.querySelectorAll('#pantalla3 #plan')];   // por las dudas, todas
+    const miRonda = ronda;
+    anteriores.forEach(a => a.classList.add('sale'));
+    setTimeout(() => {
+      if (miRonda !== ronda || pantalla !== 'p3') return;   // ya salió de esta pantalla
+      anteriores.forEach(a => a.remove());
+      armar();
+    }, 450);
+  }
+
+  function recibirRegalo() { cambiarPlan(armarClaveCarta); }
+
+  function armarClaveCarta() {
+    const plan = document.createElement('div');
+    plan.id = 'plan';
+    const form = document.createElement('form');
+    form.className = 'clave-carta';
+    form.autocomplete = 'off';
+    const label = document.createElement('label');
+    label.textContent = 'Contraseña';
+    const input = document.createElement('input');
+    input.type = 'password'; input.autocomplete = 'off'; input.autocapitalize = 'off'; input.spellcheck = false;
+    label.htmlFor = input.id = 'claveCarta';
+    const boton = document.createElement('button');
+    boton.type = 'submit'; boton.className = 'tab listo'; boton.textContent = 'Abrir';   // listo: no cae, se puede tocar ya
+    form.append(label, input, boton);
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (input.value.trim().toLowerCase() === CLAVE_CARTA.toLowerCase()) { input.blur(); cambiarPlan(armarCarta); }
+      else input.value = '';                 // incorrecta: no se muestra nada, solo se borra
+    });
+    plan.append(form);
+    $('pantalla3').appendChild(plan);
+    setTimeout(() => input.focus(), 50);
+  }
+
+  function armarCarta() {
+    const plan = document.createElement('div');
+    plan.id = 'plan';
+    plan.classList.add('con-carta');
+    const caida = document.createElement('div');       // cae desde arriba
+    caida.className = 'carta-caida';
+    const carta = document.createElement('div');       // la carta (enrollada al principio)
+    carta.className = 'carta enrollada';
+    const papel = document.createElement('div');
+    papel.className = 'papel';
+    const texto = document.createElement('div');
+    texto.className = 'texto';
+    CARTA.forEach(parrafo => { const p = document.createElement('p'); p.textContent = parrafo; texto.append(p); });
+    const seguir = document.createElement('button');
+    seguir.className = 'btn rojo';
+    seguir.textContent = 'Continuar';
+    seguir.addEventListener('click', mostrarFinal, { once: true });   // mostrarFinal ya hace su propio desvanecido
+    texto.append(seguir);
+    papel.append(texto);
+    const lazo = document.createElement('div');        // la cinta roja con el moño
+    lazo.className = 'lazo';
+    lazo.innerHTML = '<span class="cinta"></span><span class="moño izq"></span><span class="moño der"></span><span class="nudo"></span>';
+    carta.append(papel, lazo);
+    caida.append(carta);
+    plan.append(caida);
+    $('pantalla3').appendChild(plan);
+
+    caida.addEventListener('animationend', e => { if (e.animationName === 'cae') carta.classList.add('listo'); });
+    carta.addEventListener('click', () => {
+      if (!carta.classList.contains('listo') || !carta.classList.contains('enrollada') || carta.classList.contains('desatando')) return;
+      carta.classList.add('desatando');                // 1) se desata la cinta
+      setTimeout(() => {                               // 2) se abre la carta
+        carta.classList.remove('enrollada');
+        carta.classList.add('abierta');
+      }, 650);
+    });
+  }
+
+  // =====================================================
   //  PANTALLA FINAL  >>> CAMBIÁ LOS TEXTOS ACÁ <<<
   // =====================================================
   const FINAL_TITULO = '¡Felices dos años!';
@@ -1279,7 +1443,7 @@
   const FINAL_TE_AMO = 'Te amo';
   const FINAL_CORAZON = '💘';                  // al lado de "Te amo"
   const FINAL_EMOJIS = ['🌙', '🥰', '❤️'];      // alrededor del último "!": arriba, a la derecha, en diagonal
-  function recibirRegalo() {
+  function mostrarFinal() {
     const anterior = $('plan');
     const miRonda = ronda;
     anterior.classList.add('sale');
