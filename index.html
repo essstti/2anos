@@ -1024,24 +1024,30 @@
   //  ESCAPE: "botonA" se escapa y se achica, "botonB" crece hasta ocupar la pantalla
   //  (se usa en Plan A / Plan B y en Pastas / Hamburguesa)
   // =====================================================
-  function hacerEscapar(botonA, botonB) {
+  // escapan: un botón o una lista de botones que se escapan · botonB: el que crece
+  function hacerEscapar(escapan, botonB) {
+    const huyen = [].concat(escapan);
     const INTENTOS_MAXIMOS = 8;   // cantidad de intentos hasta que Plan B ocupa toda la pantalla
     let intentos = 0;
     let ultimoEscape = 0;
     let escalaB_actual = 1;
     function esquivar(e) {
       if (e) e.preventDefault();
+      const botonA = e.currentTarget;            // el que intentó tocar (se escapa ese)
       if (botonB.classList.contains('gigante')) return;
       const ahora = Date.now();
       if (ahora - ultimoEscape < 350) return;   // evita que cuente dos veces el mismo intento
       ultimoEscape = ahora;
       intentos++;
       // si alguno todavía estaba cayendo, se corta la caída: hay que marcarlo como listo igual (si no, queda trabado)
-      [botonA, botonB].forEach(b => { b.style.animation = 'none'; b.style.opacity = '1'; b.classList.add('listo'); });
+      [...huyen, botonB].forEach(b => { b.style.animation = 'none'; b.style.opacity = '1'; b.classList.add('listo'); });
 
       if (intentos >= INTENTOS_MAXIMOS) {
-        botonA.style.transition = 'transform .4s ease-in';
-        botonA.style.transform += ' scale(0)';   // Plan A desaparece achicándose
+        huyen.forEach(h => {                      // los que se escapan desaparecen achicándose
+          h.style.transition = 'transform .4s ease-in';
+          h.style.transform += ' scale(0)';
+          h.style.pointerEvents = 'none';
+        });
         // Plan B se estira suave desde donde está hasta cubrir toda la pantalla
         const r = botonB.getBoundingClientRect();
         const letraActual = parseFloat(getComputedStyle(botonB).fontSize) * escalaB_actual;
@@ -1104,9 +1110,11 @@
       botonA.style.top = y + 'px';
       botonA.style.transform = `rotate(${giro}deg) scale(${escalaA})`;
     }
-    botonA.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') esquivar(e); });
-    botonA.addEventListener('pointerdown', esquivar);
-    botonA.addEventListener('click', e => e.preventDefault());   // Plan A nunca se puede elegir 😏
+    huyen.forEach(botonA => {
+      botonA.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') esquivar(e); });
+      botonA.addEventListener('pointerdown', esquivar);
+      botonA.addEventListener('click', e => e.preventDefault());   // nunca se puede elegir 😏
+    });
   }
 
   let ronda = 0;   // cambia cada vez que se entra de nuevo; así se ignoran pasos viejos que quedaron pendientes
@@ -1171,8 +1179,8 @@
   //  >>> AGREGÁ O CAMBIÁ PREGUNTAS ACÁ: [texto de la solapa, emoji] <<<
   // =====================================================
   const PREGUNTAS = [
-    // escapa: la opción que se escapa al querer tocarla · gana: la que crece hasta ocupar la pantalla
-    { pregunta: '¿Comida de hoy?', opciones: [['Pastas', '🍝'], ['Hamburguesa', '🍔']], escapa: 'Pastas', gana: 'Hamburguesa' },
+    // escapa: la opción (o lista de opciones) que se escapa al querer tocarla · gana: la que crece hasta ocupar la pantalla
+    { pregunta: '¿Comida de hoy?', opciones: [['Pastas', '🍝'], ['Hamburguesa', '🍔'], ['Pastel de papas', '🥧']], escapa: ['Pastas', 'Hamburguesa'], gana: 'Pastel de papas' },
     { pregunta: '¿Bebida de hoy?', opciones: [['Aperol', '🍹'], ['Santa Julia', '🥂'], ['Gin', '🍸']] },
     { pregunta: '¿Postre de hoy?', opciones: [['Chocolate', '🍫'], ['Chocolinas', 'icono:chocotorta'], ['Gomitas', '🍬']] },
     // multiple: cuántas opciones se pueden elegir como máximo (aparece un botón "Listo" para confirmar)
@@ -1226,7 +1234,7 @@
     if (miRonda !== ronda || pantalla !== 'p3' || p3.dataset.modo !== 'continuar') return;   // ya salió de esta pantalla
     if (n >= PREGUNTAS.length) { terminarPreguntas(); return; }
     const { pregunta, opciones, escapa, gana, chica, multiple } = PREGUNTAS[n];
-    let botonEscapa = null, botonGana = null;
+    const botonesEscapan = []; let botonGana = null;
     const plan = document.createElement('div');
     plan.id = 'plan';
     const h = tituloPixel(pregunta);
@@ -1244,8 +1252,8 @@
       else e.textContent = emoji;
       b.append(t, e);
       if (texto === gana) botonGana = b;
-      if (texto === escapa) {               // esta opción nunca se puede elegir: se escapa
-        botonEscapa = b;
+      if ([].concat(escapa || []).includes(texto)) {   // esta opción nunca se puede elegir: se escapa
+        botonesEscapan.push(b);
         caja.appendChild(b);
         return;
       }
@@ -1304,7 +1312,7 @@
     plan.append(caja);
     if (listo) plan.append(listo);
     p3.appendChild(plan);
-    if (botonEscapa && botonGana) hacerEscapar(botonEscapa, botonGana);
+    if (botonesEscapan.length && botonGana) hacerEscapar(botonesEscapan, botonGana);
   }
 
   // =====================================================
