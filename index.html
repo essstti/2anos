@@ -91,7 +91,8 @@
     display: flex; flex-direction: column; align-items: center; gap: 1.1em;
     opacity: 0; pointer-events: none; transition: opacity .7s ease;
   }
-  #botones.ver { opacity: 1; pointer-events: auto; }
+  #botones.ver { opacity: 1; }
+  #botones.ver.listo { pointer-events: auto; }   /* recién se pueden tocar cuando terminaron de aparecer */
   .btn {
     font-family: "Press Start 2P", "Courier New", monospace; font-weight: normal; text-transform: uppercase;
     font-size: clamp(.6rem, 2.8vw, .85rem); padding: 1.1em 1.4em; border-radius: .6em; cursor: pointer;
@@ -136,6 +137,7 @@
     100% { opacity: 1; transform: translateY(0); }
   }
   #plan .opciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6em; }
+  #plan .btn:not(.listo), #plan .tab:not(.listo) { pointer-events: none; }   /* no se tocan mientras caen */
   #plan .btn { font-size: clamp(.8rem, 3.6vw, 1.1rem); padding: 1.2em 1.8em; opacity: 0; animation: cae .9s ease-out forwards;
     transition: transform .45s ease-out, left .45s ease-out, top .45s ease-out; }
   #plan .btn:nth-child(1) { animation-delay: 1.1s; }
@@ -146,6 +148,10 @@
     transition: transform .45s ease-out, left .45s ease-out, top .45s ease-out;
     animation-delay: calc(1.1s + var(--k) * .25s); }
   #plan .tab.activa { opacity: 1; }
+  #plan .subtitulo { font-family: "Press Start 2P", "Courier New", monospace; color: #fff; text-align: center;
+    font-size: clamp(.55rem, 2.4vw, .8rem); text-shadow: 2px 2px 0 #3f3f3f; margin-top: -2.3em;
+    animation: entraIzq 1.1s cubic-bezier(.2,.8,.3,1) both; }
+  #plan .btn:disabled { filter: grayscale(.7) brightness(.75); cursor: default; }   /* Listo sin nada elegido */
   /* "8" pixelado propio: el 8 de la fuente parece un "&" */
   .ocho {
     display: inline-block; width: 1em; height: 1em; vertical-align: -.125em; color: transparent; text-shadow: none;
@@ -153,11 +159,17 @@
     filter: drop-shadow(.05em .07em 0 #ff1f3d) drop-shadow(-.05em 0 0 #ff1f3d);
   }
   /* gatito pegado al título "¿Pensaste que era todo?" */
-  .meme-titulo { height: 1.5em; width: auto; vertical-align: -.35em; margin-left: .35em; border: .12em solid #fff;
+  .meme-titulo { display: block; height: 2em; width: auto; margin: 0 auto .45em; border: .12em solid #fff;
     box-shadow: .12em .12em 0 #ff1f3d; }
   /* cierre: las opciones elegidas en columna, caen desde arriba y no se pueden tocar */
   #plan .resumen { flex-direction: column; align-items: center; gap: .9em; }
   #plan .resumen .tab { animation-fill-mode: both; pointer-events: none; }
+  /* después de caer: rebote retro a saltos (baja y sube de golpe, como un videojuego viejo), cada una a su ritmo */
+  #plan .resumen .tab.listo { animation: retro .9s infinite both; animation-delay: calc(var(--k) * .22s); }
+  @keyframes retro {
+    0%, 100% { transform: translateY(0); animation-timing-function: steps(1, end); }
+    50%      { transform: translateY(-.45em); animation-timing-function: steps(1, end); }
+  }
   #plan.sale { opacity: 0; transition: opacity .45s ease; }
   #plan .huye { position: fixed; z-index: 5; }               /* el botón que se escapa (Plan A, Pastas) */
   #plan .gigante {                                           /* el botón que crece hasta ocupar la pantalla */
@@ -478,6 +490,7 @@
     intro.classList.add('open');
     tFlow.push(setTimeout(() => { main.classList.add('show'); titulo.classList.add('go'); pantalla = 'main'; volverBtn.classList.add('ver'); }, 1100));
     tFlow.push(setTimeout(() => botones.classList.add('ver'), 1100 + 5400));
+    tFlow.push(setTimeout(() => botones.classList.add('listo'), 1100 + 5400 + 700));   // después del fundido (.7s)
   });
 
   // ---- Flecha de volver: historia -> título -> corazón ----
@@ -990,6 +1003,16 @@
     }
     p3.appendChild(plan);
   }
+  // Cuando un botón o solapa termina de caer, recién ahí se puede tocar
+  document.addEventListener('animationend', e => {
+    if (e.animationName === 'cae' && e.target.matches('#plan .btn, #plan .tab')) e.target.classList.add('listo');
+  });
+  // por las dudas: cualquier toque en un botón que todavía está cayendo se frena acá, antes de llegar al botón
+  ['click', 'pointerdown', 'pointerenter'].forEach(tipo => document.addEventListener(tipo, e => {
+    const el = e.target.closest && e.target.closest('#plan .btn, #plan .tab');
+    if (el && !el.classList.contains('listo')) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true));
+
   // Título rojo pixelado: entra desde abajo y después late
   function tituloPixel(texto) {
     const h = document.createElement('h2');
@@ -1011,7 +1034,8 @@
     { pregunta: '¿Comida de hoy?', opciones: [['Pastas', '🍝'], ['Hamburguesa', '🍔']], escapa: 'Pastas', gana: 'Hamburguesa', chica: true },
     { pregunta: '¿Bebida de hoy?', opciones: [['Aperol', '🍊'], ['Santa Julia', '🥂'], ['Gin', '🍸']] },
     { pregunta: '¿Postre de hoy?', opciones: [['Chocolate', '🍫'], ['Chocolinas', 'icono:chocotorta'], ['Gomitas', '🍬']] },
-    { pregunta: '¿Plan de hoy?',   opciones: [['Vueltin', '🚗'], ['Peli', '🍿'], ['Serie', '📺']] }
+    // multiple: cuántas opciones se pueden elegir como máximo (aparece un botón "Listo" para confirmar)
+    { pregunta: '¿Plan de hoy?',   opciones: [['Vueltin', '🚗'], ['Peli', '🍿'], ['Serie', '📺']], multiple: 2 }
   ];
   const respuestas = [];
 
@@ -1060,7 +1084,7 @@
     const p3 = $('pantalla3');
     if (miRonda !== ronda || pantalla !== 'p3' || p3.dataset.modo !== 'continuar') return;   // ya salió de esta pantalla
     if (n >= PREGUNTAS.length) { terminarPreguntas(); return; }
-    const { pregunta, opciones, escapa, gana, chica } = PREGUNTAS[n];
+    const { pregunta, opciones, escapa, gana, chica, multiple } = PREGUNTAS[n];
     let botonEscapa = null, botonGana = null;
     const plan = document.createElement('div');
     plan.id = 'plan';
@@ -1086,28 +1110,58 @@
       }
       b.addEventListener('click', () => {
         if (elegida) return;
+        if (multiple) {                        // selección múltiple: prende/apaga, hasta el máximo
+          if (b.classList.contains('activa')) b.classList.remove('activa');
+          else if (caja.querySelectorAll('.tab.activa').length < multiple) b.classList.add('activa');
+          listo.disabled = caja.querySelectorAll('.tab.activa').length === 0;
+          return;
+        }
         elegida = true;
         b.classList.add('activa');           // se pone verde como la solapa elegida en las fotos
         respuestas[n] = texto;
-        // después de medio segundo: la pregunta y las otras solapas se van a la izquierda,
-        // la elegida se va a la derecha, y aparece la próxima pregunta
-        setTimeout(() => {
-          const otras = [h, ...caja.querySelectorAll('.tab:not(.activa)')];
-          [...otras, b].forEach(el => {
-            el.style.animation = 'none';
-            el.style.opacity = '1';
-            el.style.transition = 'transform .7s ease-in, opacity .7s ease-in';
-          });
-          plan.offsetWidth;   // fuerza al navegador a tomar el punto de partida
-          otras.forEach(el => { el.style.transform = 'translateX(-100vw)'; el.style.opacity = '0'; });
-          b.style.transform = 'translateX(100vw)';
-          b.style.opacity = '0';
-          setTimeout(() => { plan.remove(); armarPregunta(n + 1, miRonda); }, 750);
-        }, 500);
+        salirPregunta();
       });
       caja.appendChild(b);
     });
-    plan.append(h, caja);
+
+    // la pregunta se va: lo elegido hacia la derecha, todo lo demás hacia la izquierda
+    function salirPregunta() {
+      setTimeout(() => {
+        const elegidas = [...caja.querySelectorAll('.tab.activa')];
+        const otras = [...plan.children].filter(el => el !== caja).concat([...caja.querySelectorAll('.tab:not(.activa)')]);
+        [...otras, ...elegidas].forEach(el => {
+          el.style.animation = 'none';
+          el.style.opacity = '1';
+          el.style.transition = 'transform .7s ease-in, opacity .7s ease-in';
+        });
+        plan.offsetWidth;   // fuerza al navegador a tomar el punto de partida
+        otras.forEach(el => { el.style.transform = 'translateX(-100vw)'; el.style.opacity = '0'; });
+        elegidas.forEach(el => { el.style.transform = 'translateX(100vw)'; el.style.opacity = '0'; });
+        setTimeout(() => { plan.remove(); armarPregunta(n + 1, miRonda); }, 750);
+      }, 500);
+    }
+
+    plan.append(h);
+    let listo = null;
+    if (multiple) {
+      const sub = document.createElement('p');
+      sub.className = 'subtitulo';
+      sub.textContent = `Selección múltiple (hasta ${multiple})`;
+      plan.append(sub);
+      listo = document.createElement('button');
+      listo.className = 'btn rojo';
+      listo.textContent = 'Listo';
+      listo.disabled = true;                 // se habilita cuando elige al menos una
+      listo.style.animationDelay = (1.1 + opciones.length * 0.25 + 0.3) + 's';   // cae después de las opciones
+      listo.addEventListener('click', () => {
+        if (elegida || listo.disabled) return;
+        elegida = true;
+        respuestas[n] = [...caja.querySelectorAll('.tab.activa')].map(t => t.firstChild.textContent);
+        salirPregunta();
+      });
+    }
+    plan.append(caja);
+    if (listo) plan.append(listo);
     p3.appendChild(plan);
     if (botonEscapa && botonGana) hacerEscapar(botonEscapa, botonGana);
   }
@@ -1131,8 +1185,10 @@
 
     const lista = document.createElement('div');
     lista.className = 'opciones resumen';
-    respuestas.forEach((texto, k) => {
-      const opcion = PREGUNTAS[k].opciones.find(o => o[0] === texto);
+    // una pregunta de selección múltiple guarda varias opciones: se muestran todas
+    const elegidas = respuestas.flatMap((r, q) => (Array.isArray(r) ? r : [r]).map(texto => [texto, q]));
+    elegidas.forEach(([texto, q], k) => {
+      const opcion = PREGUNTAS[q].opciones.find(o => o[0] === texto);
       const emoji = opcion ? opcion[1] : '';
       const item = document.createElement('div');
       item.className = 'tab activa';            // verde, como la solapa elegida
@@ -1148,7 +1204,7 @@
     const continuar = document.createElement('button');
     continuar.className = 'btn rojo';
     continuar.textContent = 'Continuar';
-    continuar.style.animationDelay = (1.1 + respuestas.length * 0.25 + 0.3) + 's';   // cae después de las opciones
+    continuar.style.animationDelay = (1.1 + elegidas.length * 0.25 + 0.3) + 's';   // cae después de las opciones
     continuar.addEventListener('click', alContinuar, { once: true });
 
     plan.append(h, lista, continuar);
@@ -1173,11 +1229,21 @@
       gato.className = 'meme-titulo';
       gato.src = 'img/gato.png';
       gato.alt = '';
-      h.appendChild(gato);                       // el gatito va pegado al final del título
-      plan.appendChild(h);
+      h.prepend(gato);                           // el gatito va centrado arriba del título
+      // 4) botón para seguir
+      const regalo = document.createElement('button');
+      regalo.className = 'btn rojo';
+      regalo.textContent = 'Recibir regalo y continuar';
+      regalo.style.animationDelay = '1.4s';       // cae cuando el título ya entró
+      regalo.addEventListener('click', recibirRegalo, { once: true });
+      plan.append(h, regalo);
       $('pantalla3').appendChild(plan);
-      // >>> ACÁ SIGUE LO QUE VENGA DESPUÉS (todavía sin definir) <<<
     }, 450);
+  }
+
+  function recibirRegalo() {
+    // >>> ACÁ VA LO QUE PASA AL TOCAR "RECIBIR REGALO Y CONTINUAR" (todavía sin definir) <<<
+    console.log('Tocó Recibir regalo');
   }
 
   // ---- Zoom + dar vuelta ----
