@@ -186,14 +186,13 @@
   #plan.con-carta { justify-content: center; }
   .carta-caida { animation: cae 1s ease-out both; }
   .carta {
-    position: relative; width: min(78vw, 380px); height: 64px; margin: 0 auto; cursor: pointer;
+    position: relative; width: min(78vw, 380px); height: 64px; margin: 0 auto; cursor: pointer; z-index: 20;
     border: 4px solid #000; box-shadow: 6px 6px 0 rgba(0, 0, 0, .45);
-    /* sombreado de cilindro: más claro en el medio, más oscuro arriba y abajo */
-    background: linear-gradient(#b8945a 0 12%, #d9b77a 12% 28%, #f1dcb0 28% 62%, #d9b77a 62% 82%, #b8945a 82% 100%);
-    transition: width .9s ease-in-out, height .9s ease-in-out, background .4s;
+    /* rollo blanco: sombreado de cilindro (más claro en el medio, gris arriba y abajo) */
+    background: linear-gradient(#a9a9a9 0 12%, #d6d6d6 12% 28%, #ffffff 28% 62%, #d6d6d6 62% 82%, #a9a9a9 82% 100%);
   }
   .carta.enrollada::before, .carta.enrollada::after {   /* tapitas de los costados del rollo */
-    content: ''; position: absolute; top: -4px; bottom: -4px; width: 10px; background: #8a6a3a; border: 4px solid #000;
+    content: ''; position: absolute; top: -4px; bottom: -4px; width: 10px; background: #8d8d8d; border: 4px solid #000;
   }
   .carta.enrollada::before { left: -14px; }
   .carta.enrollada::after { right: -14px; }
@@ -220,24 +219,27 @@
   @keyframes moño-izq { to { transform: translate(-260%, 60px) rotate(-120deg); opacity: 0; } }
   @keyframes moño-der { to { transform: translate(160%, 60px) rotate(200deg); opacity: 0; } }
   @keyframes nudo-cae { to { transform: translate(-50%, 140px) rotate(90deg); opacity: 0; } }
-  /* abierta: grande, con los rollos arriba y abajo, y se desliza para leer */
-  .carta.abierta {
-    width: min(92vw, 640px); height: calc(100vh - 150px); cursor: default; animation: none;
-    background: #f1dcb0;
-  }
-  .carta.abierta::before, .carta.abierta::after {    /* los rollos de arriba y abajo */
-    content: ''; position: absolute; left: -12px; right: -12px; height: 18px; z-index: 2;
-    background: linear-gradient(#b8945a 0 30%, #d9b77a 30% 70%, #b8945a 70%); border: 4px solid #000;
+  /* 1er tiempo: se desenrolla a lo alto (papel blanco, con los rollos arriba y abajo) */
+  .carta.abierta { position: fixed; margin: 0; cursor: default; animation: none; background: #fff;
+    transition: top .55s ease-in-out, height .55s ease-in-out; }
+  .carta.abierta::before, .carta.abierta::after {
+    content: ''; position: absolute; left: -12px; right: -12px; height: 18px; z-index: 2; transition: opacity .3s;
+    background: linear-gradient(#a9a9a9 0 30%, #d6d6d6 30% 70%, #a9a9a9 70%); border: 4px solid #000;
   }
   .carta.abierta::before { top: -14px; }
   .carta.abierta::after { bottom: -14px; }
+  /* 2do tiempo: viene hacia la pantalla hasta ocuparla toda (debajo de la barra de música) */
+  .carta.pantalla { border-color: transparent; box-shadow: none;
+    transition: left .65s cubic-bezier(.3,.1,.2,1), top .65s cubic-bezier(.3,.1,.2,1), width .65s cubic-bezier(.3,.1,.2,1),
+                height .65s cubic-bezier(.3,.1,.2,1), border-color .4s, box-shadow .4s; }
+  .carta.pantalla::before, .carta.pantalla::after { opacity: 0; }
   .carta .papel { position: absolute; inset: 0; overflow: hidden; }
-  .carta.abierta .papel { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .carta.pantalla .papel { overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .carta .texto {
-    padding: 34px clamp(16px, 5vw, 36px) 40px; color: #1a1210; opacity: 0;
+    max-width: 640px; margin: 0 auto; padding: 70px clamp(18px, 6vw, 40px) 48px; color: #111; opacity: 0;   /* 70px: lugar para la flecha de volver */
     font-family: "Press Start 2P", "Courier New", monospace; font-size: clamp(.55rem, 2.3vw, .72rem); line-height: 2.1;
   }
-  .carta.abierta .texto { opacity: 1; transition: opacity .6s ease .9s; }   /* aparece cuando terminó de abrirse */
+  .carta.pantalla .texto { opacity: 1; transition: opacity .6s ease .6s; }   /* aparece cuando ya ocupa la pantalla */
   .carta .texto p { margin: 0 0 1.6em; }
   .carta .texto .btn { display: block; margin: 2em auto .5em; }
 
@@ -1428,9 +1430,19 @@
     carta.addEventListener('click', () => {
       if (!carta.classList.contains('listo') || !carta.classList.contains('enrollada') || carta.classList.contains('desatando')) return;
       carta.classList.add('desatando');                // 1) se desata la cinta
-      setTimeout(() => {                               // 2) se abre la carta
+      setTimeout(() => {                               // 2) se desenrolla a lo alto, en el lugar
+        caida.style.animation = 'none';                // (sin esto, "fixed" quedaría atado a la caída)
+        const r = carta.getBoundingClientRect();
+        Object.assign(carta.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
         carta.classList.remove('enrollada');
         carta.classList.add('abierta');
+        carta.offsetWidth;                               // fuerza al navegador a tomar el punto de partida
+        const alto = Math.min(innerHeight * 0.6, 460);
+        Object.assign(carta.style, { top: (r.top + r.height / 2 - alto / 2) + 'px', height: alto + 'px' });
+        setTimeout(() => {                             // 3) viene hacia la pantalla hasta ocuparla toda
+          carta.classList.add('pantalla');
+          Object.assign(carta.style, { left: '0px', top: '52px', width: '100vw', height: 'calc(100vh - 52px)' });
+        }, 600);
       }, 650);
     });
   }
