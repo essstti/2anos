@@ -186,8 +186,10 @@
   #plan .excl { position: relative; display: inline-block; }
   /* Los 3 emojis van sobre un arco alrededor de la punta del "!": misma distancia a la punta y entre ellos.
      --r = distancia a la punta · --y = altura de la punta (en la medida del emoji) */
+  /* el título final tiene más espacio entre líneas: así los emojis de arriba del "!" no pisan la línea de arriba (celular) */
+  #plan h2.titulo-final { line-height: 1.9; }
   #plan .deco {
-    --r: 1.95em; --y: .42em;
+    --r: 1.55em; --y: 1.25em;
     position: absolute; font-size: .36em; transform: translate(-50%, -50%);
     opacity: 0; scale: 0; animation: aparece-emoji .45s cubic-bezier(.3,1.6,.5,1) both;
   }
@@ -1288,7 +1290,7 @@
       plan.id = 'plan';
       plan.classList.add('final');
       const h = tituloPixel('');
-      h.classList.add('izq');
+      h.classList.add('izq', 'titulo-final');
       // el último "!" lleva 3 emojis chiquitos alrededor de su punta (se mueven junto con el título)
       const corte = FINAL_TITULO.lastIndexOf('!');
       h.append(document.createTextNode(corte >= 0 ? FINAL_TITULO.slice(0, corte) : FINAL_TITULO));
