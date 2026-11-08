@@ -172,22 +172,29 @@
     50%      { transform: translateY(-.2em); animation-timing-function: steps(1, end); }
   }
   #plan.sale { opacity: 0; transition: opacity .45s ease; }
-  /* pantalla final */
-  #plan.final { gap: 1.6em; }
-  #plan .final-texto { font-family: "Press Start 2P", "Courier New", monospace; color: #fff; text-align: center;
-    font-size: clamp(.7rem, 3.2vw, 1.1rem); line-height: 1.6; text-shadow: 2px 2px 0 #3f3f3f;
-    animation: entraIzq 1.1s cubic-bezier(.2,.8,.3,1) .35s both; }
+  /* pantalla final: primero entra el título; después "Te amo" y "Espero te haya gustado" (y los emojis de a uno) */
+  #plan.final { gap: 1.4em; }
   #plan h2.te-amo { color: #ff1f3d; text-shadow: 0 .07em 0 #fff, .05em .07em 0 #fff, -.05em .07em 0 #fff; }
-  #plan h2.te-amo.izq { animation-delay: .7s; }
+  #plan h2.te-amo.izq { animation-delay: 1.1s; }                 /* entra cuando terminó el título */
+  #plan .final-texto { font-family: "Press Start 2P", "Courier New", monospace; color: #fff; text-align: center;
+    font-size: clamp(.55rem, 2.5vw, .85rem); line-height: 1.6; text-shadow: 2px 2px 0 #3f3f3f;
+    animation: entraIzq 1.1s cubic-bezier(.2,.8,.3,1) 1.6s both; }   /* entra después de "Te amo" */
   /* emojis de la pantalla final */
   #plan .emoji, #plan .deco { font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
     text-shadow: none; font-weight: normal; line-height: 1; }
   #plan h2.te-amo .emoji { font-size: .9em; margin-left: .3em; vertical-align: .02em; }   /* alineado con las letras */
   #plan .excl { position: relative; display: inline-block; }
-  #plan .deco { position: absolute; font-size: .42em; }
-  #plan .deco.arriba   { bottom: 100%; left: 50%; transform: translate(-50%, -.15em); }   /* arriba de la punta */
-  #plan .deco.derecha  { top: 0; left: 100%; transform: translateX(.15em); }              /* a la derecha de la punta */
-  #plan .deco.diagonal { bottom: 100%; left: 100%; transform: translate(.05em, -.05em); } /* a 45°, arriba a la derecha */
+  /* Los 3 emojis van sobre un arco alrededor de la punta del "!": misma distancia a la punta y entre ellos.
+     --r = distancia a la punta · --y = altura de la punta (en la medida del emoji) */
+  #plan .deco {
+    --r: 1.95em; --y: .42em;
+    position: absolute; font-size: .36em; transform: translate(-50%, -50%);
+    opacity: 0; scale: 0; animation: aparece-emoji .45s cubic-bezier(.3,1.6,.5,1) both;
+  }
+  #plan .deco.arriba   { left: 50%;                               top: calc(var(--y) - var(--r));         animation-delay: 1.4s; } /* 90° */
+  #plan .deco.diagonal { left: calc(50% + var(--r) * .7071);       top: calc(var(--y) - var(--r) * .7071); animation-delay: 1.9s; } /* 45° */
+  #plan .deco.derecha  { left: calc(50% + var(--r));               top: var(--y);                          animation-delay: 2.4s; } /* 0° */
+  @keyframes aparece-emoji { from { opacity: 0; scale: 0; } to { opacity: 1; scale: 1; } }
   #plan .huye { position: fixed; z-index: 5; }               /* el botón que se escapa (Plan A, Pastas) */
   #plan .gigante {                                           /* el botón que crece hasta ocupar la pantalla */
     display: flex; align-items: center; justify-content: center; gap: .5em;
@@ -466,7 +473,7 @@
   //  CONTRASEÑA  >>> CAMBIÁ LA CONTRASEÑA ACÁ <<<
   //  (no importan mayúsculas/minúsculas ni espacios al principio o al final)
   // =====================================================
-  const CONTRASENA = '730';
+  const CONTRASENA = 'valuyesti';
   const formClave = document.getElementById('clave');
   const inputClave = document.getElementById('claveInput');
   inputClave.focus();
@@ -1307,7 +1314,7 @@
       corazon.className = 'emoji';
       corazon.textContent = FINAL_CORAZON;
       teAmo.append(corazon);
-      plan.append(h, texto, teAmo);
+      plan.append(h, teAmo, texto);   // Te amo arriba, "Espero te haya gustado" abajo
       $('pantalla3').appendChild(plan);
     }, 450);
   }
