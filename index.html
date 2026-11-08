@@ -233,14 +233,23 @@
     transition: left .65s cubic-bezier(.3,.1,.2,1), top .65s cubic-bezier(.3,.1,.2,1), width .65s cubic-bezier(.3,.1,.2,1),
                 height .65s cubic-bezier(.3,.1,.2,1), border-color .4s, box-shadow .4s; }
   .carta.pantalla::before, .carta.pantalla::after { opacity: 0; }
-  .carta .papel { position: absolute; inset: 0; overflow: hidden; }
+  /* hoja de cuaderno: renglones celestes (uno cada 2.1em, igual que el interlineado del texto) */
+  .carta .papel { position: absolute; inset: 0; overflow: hidden;
+    font-family: "Press Start 2P", "Courier New", monospace; font-size: clamp(.55rem, 2.3vw, .72rem); }
+  .carta.pantalla .papel {
+    --renglon: 2.1em;
+    background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--renglon) - 2px), #a8cdf0 calc(var(--renglon) - 2px) var(--renglon));
+    background-attachment: local;   /* los renglones se mueven con el texto al deslizar */
+  }
   .carta.pantalla .papel { overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .carta .texto {
-    max-width: 640px; margin: 0 auto; padding: 70px clamp(18px, 6vw, 40px) 48px; color: #111; opacity: 0;   /* 70px: lugar para la flecha de volver */
-    font-family: "Press Start 2P", "Courier New", monospace; font-size: clamp(.55rem, 2.3vw, .72rem); line-height: 2.1;
+    max-width: 640px; margin: 0 auto; color: #111; opacity: 0; line-height: 2.1;
+    /* arriba: 4 renglones vacíos (lugar para la flecha de volver); a la izquierda: el margen rojo del cuaderno */
+    padding: 8.4em clamp(14px, 5vw, 36px) 4.2em 3.6em;
+    background: linear-gradient(90deg, transparent 2.5em, #ff8f8f 2.5em, #ff8f8f calc(2.5em + 2px), transparent calc(2.5em + 2px));
   }
   .carta.pantalla .texto { opacity: 1; transition: opacity .6s ease .6s; }   /* aparece cuando ya ocupa la pantalla */
-  .carta .texto p { margin: 0 0 1.6em; }
+  .carta .texto p { margin: 0 0 2.1em; }   /* un renglón vacío entre párrafos */
   .carta .texto .btn { display: block; margin: 2em auto .5em; }
 
   /* pantalla final: primero entra el título; después "Te amo" y "Espero te haya gustado" (y los emojis de a uno) */
