@@ -586,21 +586,43 @@
   });
 
   // =====================================================
-  //  CONTRASEÑA  >>> CAMBIÁ LA CONTRASEÑA ACÁ <<<
-  //  (no importan mayúsculas/minúsculas ni espacios al principio o al final)
+  //  CIFRADO (AES-GCM con clave derivada por PBKDF2, hecho por el navegador)
+  //  Devuelve el texto descifrado, o null si la contraseña es incorrecta.
+  //  No importan mayúsculas/minúsculas ni espacios al principio o al final.
   // =====================================================
-  const CONTRASENA = 'valuyesti';
+  async function descifrar(secreto, clave) {
+    try {
+      const desde64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+      const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave.trim().toLowerCase()), 'PBKDF2', false, ['deriveKey']);
+      const llave = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: desde64(secreto.sal), iterations: secreto.it, hash: 'SHA-256' },
+                                                  base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+      const datos = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: desde64(secreto.iv) }, llave, desde64(secreto.datos));
+      return new TextDecoder().decode(datos);
+    } catch (e) { return null; }   // contraseña incorrecta (o navegador sin cifrado)
+  }
+
+  // =====================================================
+  //  CONTRASEÑA DE ENTRADA: no está escrita en el código. Se comprueba
+  //  intentando descifrar este dato: solo funciona con la contraseña correcta.
+  //  (para cambiarla hay que volver a cifrar: herramientas/cifrar.py)
+  // =====================================================
+  const SECRETO_ENTRADA = {"sal": "UI59YzvAa05Ekx+NL68Pnw==", "iv": "rtSlDv3557a0XcNr", "it": 200000, "datos": "utwacox/ZNWsCNtYQC6aH2qM"};
   const formClave = document.getElementById('clave');
   const inputClave = document.getElementById('claveInput');
   inputClave.focus();
   formClave.addEventListener('submit', e => {
     e.preventDefault();
-    if (inputClave.value.trim().toLowerCase() === CONTRASENA.trim().toLowerCase()) {
-      formClave.classList.add('fuera');   // correcta: aparece el corazón
-      inputClave.blur();
-    } else {
-      inputClave.value = '';               // incorrecta: no se muestra nada, solo se borra
-    }
+    if (formClave.dataset.probando) return;
+    formClave.dataset.probando = '1';
+    descifrar(SECRETO_ENTRADA, inputClave.value).then(texto => {
+      delete formClave.dataset.probando;
+      if (texto === 'ok') {
+        formClave.classList.add('fuera');   // correcta: aparece el corazón
+        inputClave.blur();
+      } else {
+        inputClave.value = '';               // incorrecta: no se muestra nada, solo se borra
+      }
+    });
   });
 
   // ---- Al tocar el corazón: se rompe en bloques ----
@@ -1396,19 +1418,11 @@
 
   // =====================================================
   //  REGALO: contraseña -> carta enrollada -> se desata y se abre
-  //  >>> CAMBIÁ LA CONTRASEÑA Y EL TEXTO DE LA CARTA ACÁ <<<
-  //  (cada elemento de CARTA es un párrafo)
+  //  La carta está CIFRADA con su contraseña: sin ella no se puede leer, ni mirando el código.
+  //  (para cambiar la carta o la contraseña hay que volver a cifrarla: herramientas/cifrar.py)
   // =====================================================
-  const CLAVE_CARTA = 'valuyesti12';
-  const CARTA = [
-    'Es el realmente no saber por donde empezar, que decirte mi loquita, son dos años que parece que pasaron volando, después te pones a pensar, a ver lo que somos y por ahí caes, o a mi me pasa por lo menos.',
-    'Te amo, quiero que lo sepas, sos mi amor mas grande, a quien le pongo dedicación y mucho amor desde lo mas profundo, ojala estemos juntos el resto de esta vida así, con altos y bajos pero al pie del cañón el uno del otro, como siempre. Es impresionante el apoyo que nos tenemos, el querer progresar y vernos juntos en todos los escenarios y contextos posibles, ojala seas la madre de mis hijos, aunque para otra persona sea fuerte escucharlo, pero obvio que va a ser así si no vive lo que vivimos nosotros, no quiero a otra persona en esta vida que no seas vos, sos perfecta para mi, y sobre todo perfecta, tenes todo lo que siempre busque, tu positivismo, tranquilidad, valores, educación y obvio lo hermosa que sos es sublime.',
-    'Ojala algún día llegar a casa (que sea nuestra), y gritarte de la cocina, que vamos a comer amoooooor y vos contestándome, milas con fideos goooordi, seria loco pero obvio que va a ser así mi amor.',
-    'Espero poder darte todo lo que siempre anhelaste, tanto bueno, como lo malo que te toco y que no merecías, sin esos errores quizás no se si estuviéramos acá, por ende también agradezco el destino y sobre todo pienso que todo pasa por algo, y ese algo nos hizo terminar acá, con nuestros baches y caídas, con mis errores de pendejo pelotudo pero que cualquiera quizás los tendría, o no, pero a fin de cuentas estamos acá por eso.',
-    'Por ultimo quiero agradecerte por todo, desde aceptar mis disculpas, mis errores y por darme una oportunidad mas, hasta lo que sos, a lo que me generas y a lo que me vas a seguir generando, a tu apoyo incondicional como también al de tu familia. Gracias por brillar y hacerme brillar a mi, a querer bailar y elegirme a mi para hacerlo con vos, a darle mas sentido a mi vida, a que me generes tantas ganas de verte después de verte, a "reprocharme" cuando no te doy bola 2 segundos, a todo el aire que le sacas a mis pulmones cuando me haces reír, a perdonarme cuando te pregunto si te gusta el queso y repetirme que no te gusta por decima quinta vez o quizás vigésima novena vez, al lugar y al espacio que me das, agradezco todo en esta vida, me parece extraordinaria y se vuelve mejor con vos al lado, te elijo todos los días, cierro la puerta, la encinto, la pego con gotita y la revoco para que no entre nadie mas, te amo.',
-    '¡¡Felices Dos Divinos y Divertidos Años!! ♡'
-  ];
-  const CARTA_FIRMA = 'Esteban.';   // va abajo a la derecha, como en el papel
+  const CARTA_CIFRADA = {"sal": "aE0ZAki4EyKLK64K4GYUwg==", "iv": "sJsouwjqmC1iQL41", "it": 200000, "datos": "497mC2FhTgevjDVajoPjtwi3rY0ANb9LPTaVaW6USRvyc8xEyhc5+Q+nJLlDuS4qPtwzg/0dNKh3VJaSkkduNvQT/3Jra4EmVJYlfBTHkiuPj31Hha2Wer6eqE+DIn2G9GiX4V8aZIE2sdEciqvZd+t+E9NcnIlTm675L+DNJuiH7DjGEZjqU+MasAivOU7cYlP9BhomEkKG4Pv/7/sB7hvMeefdgzv3h8ky6DZNaSnoBEoStk/2NEkYatxzcnzw+SjKnL0dWnwp4OKoLdkcyJLxq6pfCvuFfqVIiNDd34YOO4M3eq9QZ64ZQSlPcInooIBAnrcOFw3Vamwx2A50NVkgtEcQfhC941HS+iIgYLa4AKZwWwj25oQziJbwX8pnd+CMxOZBNUjWi3xBm1U+gqnQJahlj9vjUSiB1k+4QhR4s6tlG18BxdNka0RhpAXAdyRXAmkb9fre/djJdyBvHXbGhmB/1VPQCKXlKBqWOazDaitZl9eZ5n7G28UILx8oKAdkq8CWI/TF3mc3TWcWBM0famLzb7YsO5uHECcUnnGW3ScrNszqQvnsk/iiT/3uBH9nfvg4zFihQfMDNqq6ZLFwcqOY1fjS3YPy0fZq0OFRSgUcDtS4BTX9WcJbjUjB0CYrwNt5DC3qnNL0e27mz4SgjdNODJwgn5+lydWXiacFz2gShLouP3qs9d30KabrQG22BdxQSOHqsJCE5w+KaFLHH0M7ywLMb9ksNWQ8Xax+6CR7oMG3D9446xTTd04Ek/fhmHtuJVMuAulpeF129nqNZ5iiYOLBrsnc3QBmZInxX8nfnZRvX8rywMkQhfYlMquQdSSx34/GK/ecGMdSTDqSLjkjRlNLpXmqFEkGZ45rLOTsi+S3UcXuAr8fV0N4LyIPPM2WBIMVz+VF3uY6S6Sk/HaeboTybbv/AAzOJnoPKsjCpCaAJ8DUsRsNQEsRJUh3FcM/ONOUbNX12ax6/E6jIwJsqbxs3tSTM0S8BZBnSvcv3Q3Ssc7dlgULGCvXgWThyfPm4iudj8lJBNDk4XnjJ2Ws2vnDQAP65wEqpZ1ZvpGWmYOlW4F0xg58mJZhIrJfEdXOdYS67P/qBwtGbDuykew7vDNVN06twVQsU4JHjlRSKWySmMKhXqty4ZD/EWaCLHV8P5FWUvOPO2GUqA5Bw8dZ/B7Sosdb0ChPbdvtMqMqTazRBF5ZOOtyUDKReYH2WvwAfXkM66mHkOdCyzu9unmTIp1BnAhO4VWElc3OGyVRD6tt9xp+IOOwQXRx44q+z7A6udaMLv3KSywFca+mg79WxoAn9qPP8/wbzi08s4XykgzSkFmb6dagesERb1K4sDO+fSgvaJJfC+DzEN6cr87VhOlBJKSDaSVxvotjf+HVcsFW1OOLbdK982ILooiG0hxxBGwG4D+G17K7jW+Ryq+sf4jFXwD/yQ2Of9kBn9F3SOBMF2cSt3SVdi7r5Z8Zs6zbxUbzJMVU50jfZqf+BZskjLN+SzWcFPuRtNdLWjBiGx3GrWzWNiSwl1C9ggMAlSyJmr4ZutQpUpuprS3ZZHROhNuZNcEH0Tus7fKAarzhM/yr7X6dadjXBSviWcddBzwSOfh5g6mhC76cfyju4HZ9SnSqOWnqojIWnlwFd5FGk+b0ztxY8r/BkhB1abMdHRIf7GibuEaL8AB+u9wqYy3KzxpRXMRXXHt2/yYOG5b3B98/C8Oe1G9DpOPLLeLuEn709YH3x9fEAJR5BHXKkUHvSweczW8Rje1WaeNlxdkX39WsXxMvm+IZLq8xaBq9VNEg9D8bTutx+x9cLrJEbZbv+ombtTvJ41MTeHILrm9jJR2AmZkDQwszlfUmD4o7P0dK+2g1AbAjtxNCOfC+8HosgJLmCKMGN5iysgJuZ/wtJXoyGPq+du4RCJpfPPqOdK/nGB2TxP7l8ZqCHdz0Zk/uTW+ZsgwGcPJIwz0hui/1d9afQSllsZwqSRrUq6CePmObnfQ3WxDvKDKne8t/3UKsR6d9z3hDWs+z/d923Z4VllNBsuQU5dhfx8VjLAtW80hhrabbxkBI2B1myQo75kbgloekyELMICCBRSS19PRT75JnkV7YtSaFXIJEfJ5FW0j87YL9NU0tb+tQ3OyYLtGlvCq9X/XFxTCoDRDSaWeuYpfVRwu3UM0ytcTUf8RQ2eMhUWnLht3ZXUmRFbPrkgFdQf8U1ro4RFjB04aapHvs0zMIPoDaOqodKcJMh290PrxlB3F1CPcJV2EubkjpEHEM1HLIojvhfT5nekPz4xGp0KU0CNw0xiqICSkP+ehy4NJMZh/qgGInBuuRDWwWQRXXDEgfI7puERgfHmDeR2+pzk12E1vWstRWbnE2JbEH7mOlfQL4xCsVQHAa1Ck91vSqgbS32Rfw7TYW07Bio57awwTkXmjN7k2WGqbyX5mI0IsUfx7JRbC0RsxA4PgZzqQ5ijhVav3zeR9EszEcAGfjjPidNzqwsHjianRt4uOO0E5/Fm4BTZ4j9InZ9FRJ+J5rafb0/qIeCQ/lByDdgB7XmceFEQuXDSL3xxmEsSVLIuhS/ll5LN8rmOPE5Bcu1939HjfZSlsI4QSSnHllnFa8ou5amQaliizA6ZNP2jiSExyowHYBkPChzDBG2/tjt3C8c+GDh19g/bkbk8J7wv7ORttgPlLdjG66HyKveDJFeZQFRMnYsjDzxN3g42/j2k4nfOSkeZMLqUGtlUiAyA47YHlHlfc5UgXf0496o0NWD1as+PF07HicE6x1dcbq0fpeI8TjJ3rbDBtHPwvPpPXqibMHe+O6qrYS1EuWi+rojdPUSumYRvYXb8Pzxp/LKg6apvZuihCd0mNMTk1xIbP3S6XL6o2F2JS3V59yj2h/kHsY6kaz4M9DPL8UVk+dFhoAX9WRjvXuPsA8pqRoWLL1TtWmCtAPqSAi07Jj3PuGpOzs8r0ztdICG/ipHbc3Q6y2KvoZCFc9+dOXKukLv7z4V0tmyczER7C/8O9oR2EN6Y7Gp29IDUb8SsYZJh9+ICcBPlTahchKJ/HhbcwA8FlucZXiKp2j+v2/fr23BHEN6UHKeiVyMGQBs2Uecg5eNaPhBGicuxYl2VDX/Jv2EOaNlluIPhhBWO723gwi2MnlTHAOqAFfyIh8ZtQjxPud2g54D2linSLV7N4/2r8b4+jlWa50nhCUULEh5D/DZYRqcqARchGU6nEdyN28tjHj5nv2GT1M/pDAoaftv5Fm+zFEg0o+ST294HoAES2Ck+CgaKtIBhWaY0EKTaNKQCC10a8s2HjR3mrZ+Fx89tAEOFurbii/suJeIOrBEjpf8FcYiMQAqNBAmkckmAT4QklcaxeT39Xo41w35o9LVUnVuJKKXMkvEjYBD3zg0agjQqi3bNn+9NjpefW1zTx4euoPWtmfcxR3mjlF0Xf0UlExEUumeqScDk122F0+o3IjRO6K+muxN1Q9fUoNoX/54LtCXf31SuciAteNFHo/pe5oJTsHdJvuX9IDiw=="};
+  let cartaLeida = null;   // la carta ya descifrada (solo existe después de poner bien la contraseña)
 
   // cambia de pantalla: la actual se desvanece y después se arma la siguiente
   function cambiarPlan(armar) {
@@ -1440,8 +1454,13 @@
     form.append(label, input, boton);
     form.addEventListener('submit', e => {
       e.preventDefault();
-      if (input.value.trim().toLowerCase() === CLAVE_CARTA.toLowerCase()) { input.blur(); cambiarPlan(armarCarta); }
-      else input.value = '';                 // incorrecta: no se muestra nada, solo se borra
+      if (form.dataset.probando) return;
+      form.dataset.probando = '1';
+      descifrar(CARTA_CIFRADA, input.value).then(texto => {
+        delete form.dataset.probando;
+        if (texto) { cartaLeida = JSON.parse(texto); input.blur(); cambiarPlan(armarCarta); }
+        else input.value = '';               // incorrecta: no se muestra nada, solo se borra
+      });
     });
     plan.append(form);
     $('pantalla3').appendChild(plan);
@@ -1479,7 +1498,7 @@
     papel.className = 'papel';
     const texto = document.createElement('div');
     texto.className = 'texto';
-    CARTA.forEach(parrafo => {
+    cartaLeida.parrafos.forEach(parrafo => {
       const p = document.createElement('p');
       // el ♡ va más grande y en rojo
       parrafo.split('♡').forEach((parte, k) => {
@@ -1488,7 +1507,7 @@
       });
       texto.append(p);
     });
-    const firma = document.createElement('p'); firma.className = 'firma'; firma.textContent = CARTA_FIRMA; texto.append(firma);
+    const firma = document.createElement('p'); firma.className = 'firma'; firma.textContent = cartaLeida.firma; texto.append(firma);
     // dibujo pixelado al final: la luna (sube y baja) y nosotros de la mano
     const escena = document.createElement('div');
     escena.className = 'escena-noche';
